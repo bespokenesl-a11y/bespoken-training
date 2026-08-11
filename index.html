@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bespoken Training</title>
+<style>
+  :root{
+    --navy:#1E2761; --ice:#CADCFC; --white:#FFFFFF; --gray:#6B7280;
+    --red:#C0392B; --green:#2E7D5B; --bg:#12141c; --panel:#1c202c;
+    --panel2:#232838; --line:#333a4d; --ink:#eceef4; --ink-dim:#9aa1b8;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Calibri,Arial,sans-serif;min-height:100vh;}
+  .wrap{max-width:480px;margin:0 auto;padding:48px 20px 80px;}
+  .logo{font-family:Georgia,serif;font-weight:700;color:#e2531e;font-size:22px;margin-bottom:6px;}
+  .tag{color:var(--ink-dim);font-size:13px;margin-bottom:32px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;}
+  h1{font-size:22px;margin:0 0 6px;}
+  .sub{color:var(--ink-dim);font-size:13.5px;margin:0 0 24px;line-height:1.5;}
+  label{display:block;font-size:13px;margin:14px 0 6px;color:var(--ink-dim);}
+  input[type=text],input[type=email],input[type=password]{
+    width:100%;padding:11px 13px;border-radius:8px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);font-size:14.5px;
+  }
+  input:focus{outline:none;border-color:var(--ice);}
+  .type-choice{display:flex;gap:10px;margin-top:6px;}
+  .type-choice label{
+    flex:1;margin:0;padding:12px;border:1px solid var(--line);border-radius:8px;
+    text-align:center;cursor:pointer;font-size:13px;color:var(--ink);
+  }
+  .type-choice input{display:none;}
+  .type-choice input:checked + span{color:var(--ice);font-weight:600;}
+  .type-choice label:has(input:checked){border-color:var(--ice);background:var(--panel2);}
+  .btn{
+    margin-top:22px;width:100%;padding:13px;border:none;border-radius:9px;
+    background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:pointer;
+  }
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-ghost{background:none;border:1px solid var(--line);color:var(--ink-dim);margin-top:10px;}
+  .switch{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-dim);}
+  .switch a{color:var(--ice);cursor:pointer;text-decoration:underline;}
+  .msg{margin-top:16px;padding:12px 14px;border-radius:8px;font-size:13.5px;line-height:1.5;display:none;}
+  .msg.error{background:rgba(192,57,43,.15);color:#ff9d91;border:1px solid var(--red);display:block;}
+  .msg.ok{background:rgba(46,125,91,.15);color:#8fe0bb;border:1px solid var(--green);display:block;}
+  .status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .signout{font-size:12px;color:var(--ink-dim);cursor:pointer;text-decoration:underline;}
+  .access-pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;letter-spacing:.02em;}
+  .access-pill.active{background:rgba(46,125,91,.2);color:#8fe0bb;}
+  .access-pill.pending{background:rgba(227,168,87,.2);color:#e3a857;}
+  .access-pill.none{background:rgba(154,161,184,.15);color:var(--ink-dim);}
+  .hidden{display:none;}
+  .company-field{display:none;}
+  .company-field.show{display:block;}
+  .field-hint{font-size:11.5px;color:var(--ink-dim);margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Bespoken English</div>
+  <div class="tag">Bespoken Training &mdash; learn exactly what you need</div>
+
+  <!-- ===== Signed-out: auth card ===== -->
+  <div class="card" id="authCard">
+    <div id="signupView">
+      <h1>Create your account</h1>
+      <p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere.</p>
+      <label for="su-name">Full name</label>
+      <input type="text" id="su-name" autocomplete="name">
+      <label for="su-email">Email address</label>
+      <input type="email" id="su-email" autocomplete="email">
+      <label for="su-pw">Password</label>
+      <input type="password" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
+      <label>How are you enrolling?</label>
+      <div class="type-choice">
+        <label><input type="radio" name="stype" value="private" checked><span>Private Student</span></label>
+        <label><input type="radio" name="stype" value="corporate_sponsor"><span>Corporate Sponsored</span></label>
+      </div>
+      <div class="company-field" id="companyField">
+        <label for="su-company">Company / sponsor name</label>
+        <input type="text" id="su-company" placeholder="e.g. Boston Consulting Group">
+        <div class="field-hint">We'll use this to match you with your sponsor's approval.</div>
+      </div>
+      <button class="btn" id="signupBtn">Create account</button>
+      <div class="msg" id="signupMsg"></div>
+      <div class="switch">Already have an account? <a id="toLogin">Sign in</a></div>
+    </div>
+
+    <div class="hidden" id="loginView">
+      <h1>Sign in</h1>
+      <p class="sub">Use the same email and password you created for your assessment.</p>
+      <label for="li-email">Email address</label>
+      <input type="email" id="li-email" autocomplete="email">
+      <label for="li-pw">Password</label>
+      <input type="password" id="li-pw" autocomplete="current-password">
+      <button class="btn" id="loginBtn">Sign in</button>
+      <div class="msg" id="loginMsg"></div>
+      <div class="switch">Need an account? <a id="toSignup">Create one</a></div>
+    </div>
+  </div>
+
+  <!-- ===== Signed-in: dashboard ===== -->
+  <div class="card hidden" id="dashCard">
+    <div class="status-row">
+      <div>Signed in as <strong id="whoami"></strong></div>
+      <span class="signout" id="signoutBtn">Sign out</span>
+    </div>
+    <h1>Your training access</h1>
+    <p class="sub" id="accessSummary">Checking your access status&hellip;</p>
+
+    <div id="redeemBlock">
+      <label for="couponInput">Have a code from your instructor?</label>
+      <input type="text" id="couponInput" placeholder="Enter your access code">
+      <button class="btn" id="redeemBtn">Redeem code</button>
+      <div class="msg" id="redeemMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Supabase project config (REST only, no SDK — matches the other
+  // Bespoken apps' pattern of hand-rolled fetch calls against PostgREST /
+  // GoTrue directly rather than pulling in supabase-js). ----
+  var SUPABASE_URL = 'https://zqcwhsxaawmrckbglcim.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_0x-TxeUzQaB1_rsP7bnrRw_jBR9icOD';
+  var STORAGE_KEY = 'bt-session';
+
+  var qs = new URLSearchParams(location.search);
+  var returnTo = qs.get('return_to');
+
+  function saveSession(s){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  }
+  function loadSession(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+    catch(e){ return null; }
+  }
+  function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
+
+  async function authFetch(path, opts){
+    opts = opts || {};
+    var headers = Object.assign({
+      'apikey': SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    }, opts.headers || {});
+    var session = loadSession();
+    if(session && session.access_token){
+      headers['Authorization'] = 'Bearer ' + session.access_token;
+    }
+    var res = await fetch(SUPABASE_URL + path, Object.assign({}, opts, {headers: headers}));
+    return res;
+  }
+
+  async function refreshIfNeeded(){
+    var s = loadSession();
+    if(!s) return null;
+    var expiresAt = (s.issued_at || 0) + (s.expires_in || 3600) * 1000;
+    if(Date.now() < expiresAt - 60000) return s; // still good for another minute+
+    // try a refresh
+    try{
+      var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      });
+      if(!res.ok){ clearSession(); return null; }
+      var data = await res.json();
+      var newSession = {
+        access_token: data.access_token, refresh_token: data.refresh_token,
+        expires_in: data.expires_in, issued_at: Date.now(),
+        user: data.user
+      };
+      saveSession(newSession);
+      return newSession;
+    }catch(e){ clearSession(); return null; }
+  }
+
+  function showMsg(el, text, isError){
+    el.textContent = text;
+    el.className = 'msg ' + (isError ? 'error' : 'ok');
+  }
+
+  // ---- signup / login view toggle ----
+  document.getElementById('toLogin').onclick = function(){
+    document.getElementById('signupView').classList.add('hidden');
+    document.getElementById('loginView').classList.remove('hidden');
+  };
+  document.getElementById('toSignup').onclick = function(){
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('signupView').classList.remove('hidden');
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=stype]'), function(r){
+    r.onchange = function(){
+      document.getElementById('companyField').classList.toggle('show', r.value === 'corporate_sponsor' && r.checked);
+    };
+  });
+
+  // ---- sign up ----
+  document.getElementById('signupBtn').onclick = async function(){
+    var btn = this;
+    var name = document.getElementById('su-name').value.trim();
+    var email = document.getElementById('su-email').value.trim();
+    var pw = document.getElementById('su-pw').value;
+    var stype = document.querySelector('input[name=stype]:checked').value;
+    var company = document.getElementById('su-company').value.trim();
+    var msgEl = document.getElementById('signupMsg');
+
+    if(!name || !email || pw.length < 8){
+      showMsg(msgEl, 'Please enter your name, a valid email, and a password of at least 8 characters.', true);
+      return;
+    }
+    if(stype === 'corporate_sponsor' && !company){
+      showMsg(msgEl, 'Please enter your company or sponsor name.', true);
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    try{
+      var res = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pw, data: { full_name: name } })
+      });
+      var data = await res.json();
+      if(!res.ok){
++        showMsg(msgEl, data.msg || data.error_description || 'Could not create your account. That email may already be registered.', true);
+        btn.disabled = false; btn.textContent = 'Create account';
+        return;
+      }
+
+      // Stash the chosen student_type/company so it can be applied the moment
+      // we have an authenticated session — either right now (email confirmation
+      // off) or on first login after they confirm (email confirmation on).
+      localStorage.setItem('bt-pending-profile', JSON.stringify({ student_type: stype, company: company }));
+
+      if(data.access_token){
++        // Confirmation is off (or this project auto-confirms) — we're
+        // signed in immediately.
+        saveSession({
+          access_token: data.access_token, refresh_token: data.refresh_token,
+          expires_in: data.expires_in, issued_at: Date.now(), user: data.user
+        });
+        await applyPendingProfile();
+        enterDashboard();
+      } else {
+        showMsg(msgEl, 'Almost there — check ' + email + ' for a confirmation link, then come back and sign in.', false);
+        btn.disabled = false; btn.textContent = 'Create account';
+      }
+    }catch(e){
+      showMsg(msgEl, 'Something went wrong reaching the server. Please try again.', true);
+      btn.disabled = false; btn.textContent = 'Create account';
+    }
+  };
+
+  // ---- log in ----
+  document.getElementById('loginBtn').onclick = async function(){
+    var btn = this;
+    var email = document.getElementById('li-email').value.trim();
+    var pw = document.getElementById('li-pw').value;
+    var msgEl = document.getElementById('loginMsg');
+    if(!email || !pw){ showMsg(msgEl, 'Enter your email and password.', true); return; }
+
+    btn.disabled = true; btn.textContent = 'Signing in&mdash;';
+    try{
+      var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pw })
+      });
+      var data = await res.json();
+      if(!res.ok){
+        showMsg(msgEl, data.error_description || 'Incorrect email or password.', true);
+        btn.disabled = false; btn.textContent = 'Sign in';
+        return;
+      }
+      saveSession({
+        access_token: data.access_token, refresh_token: data.refresh_token,
+        expires_in: data.expires_in, issued_at: Date.now(), user: data.user
+      });
+      await applyPendingProfile();
+      enterDashboard();
+    }catch(e){
+      showMsg(msgEl, 'Something went wrong reaching the server. Please try again.', true);
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+  };
+
+  async function applyPendingProfile(){
+    var raw = localStorage.getItem('bt-pending-profile');
+    if(!raw) return;
+    try{
+      var pending = JSON.parse(raw);
+      var session = loadSession();
+      await authFetch('/rest/v1/profiles?id=eq.' + session.user.id, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ student_type: pending.student_type, company: pending.company || null })
+      });
+      localStorage.removeItem('bt-pending-profile');
+    }catch(e){ /* not fatal — profile just won't have student_type set yet */ }
+  }
+
+  document.getElementById('signoutBtn').onclick = function(){
+    clearSession();
+    location.reload();
+  };
+
+  document.getElementById('redeemBtn').onclick = async function(){
+    var btn = this;
+    var code = document.getElementById('couponInput').value.trim();
+    var msgEl = document.getElementById('redeemMsg');
+    if(!code){ showMsg(msgEl, 'Enter a code first.', true); return; }
+    btn.disabled = true; btn.textContent = 'Checking&mdash;';
+    try{
++      var res = await authFetch('/rest/v1/rpc/redeem_coupon', {
+        method: 'POST',
+        body: JSON.stringify({ p_code: code })
+      });
+      var rows = await res.json();
+      var row = Array.isArray(rows) ? rows[0] : rows;
+      if(row && row.success){
+        showMsg(msgEl, row.message, false);
+        document.getElementById('couponInput').value = '';
+        refreshAccessSummary();
+      } else {
+        showMsg(msgEl, (row && row.message) || 'Could not redeem that code.', true);
+      }
+    }catch(e){
+      showMsg(msgEl, 'Something went wrong reaching the server.', true);
+    }
+    btn.disabled = false; btn.textContent = 'Redeem code';
+  };
+
+  async function refreshAccessSummary(){
+    var session = loadSession();
+    var summaryEl = document.getElementById('accessSummary');
+    try{
+      var res = await authFetch('/rest/v1/access_grants?user_id=eq.' + session.user.id + '&order=expires_at.desc&select=status,expires_at,student_type');
+      var rows = await res.json();
+      var active = rows.find(function(r){ return r.status === 'active' && new Date(r.expires_at) > new Date(); });
+      var pending = rows.find(function(r){ return r.status === 'pending'; });
+      if(active){
++        var d = new Date(active.expires_at);
+        summaryEl.innerHTML = '<span class="access-pill active">Active</span> &nbsp;Your training access is open through ' + d.toLocaleDateString() + '.';
+      } else if(pending){
+        summaryEl.innerHTML = '<span class="access-pill pending">Pending approval</span> &nbsp;Your corporate sponsor enrollment is waiting on approval.';
+      } else {
+        summaryEl.innerHTML = '<span class="access-pill none">No active access</span> &nbsp;Once you\'re approved or redeem a code, your training unlocks here.';
+      }
+    }catch(e){
+      summaryEl.textContent = 'Could not check your access status right now.';
+    }
+  }
+
+  function enterDashboard(){
+    var session = loadSession();
+    document.getElementById('authCard').classList.add('hidden');
+    document.getElementById('dashCard').classList.remove('hidden');
+    document.getElementById('whoami').textContent = (session.user && session.user.email) || '';
+    refreshAccessSummary();
+
+    // Hand off to whatever assessment sent us here, now that we have a
+    // session. Tokens travel in the URL fragment (never sent to the server
+    // in a Referer header the way query params can be) and the receiving
+    // app is expected to read + immediately strip them from the address bar.
+    if(returnTo){
+      var url = new URL(returnTo);
+      url.hash = 'bt_access_token=' + encodeURIComponent(session.access_token) +
+                 '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
+      var goBtn = document.createElement('button');
+      goBtn.className = 'btn';
+      goBtn.style.marginTop = '18px';
+      goBtn.textContent = 'Continue';
+      goBtn.onclick = function(){ location.href = url.toString(); };
+      document.getElementById('dashCard').appendChild(goBtn);
+    }
+  }
+
+  // ---- boot ----
+  (async function init(){
+    var session = await refreshIfNeeded();
+    if(session){
+      await applyPendingProfile();
+      enterDashboard();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
