@@ -294,13 +294,16 @@
     try{
       var pending = JSON.parse(raw);
       var session = loadSession();
-      await authFetch('/rest/v1/profiles?id=eq.' + session.user.id, {
+      var res = await authFetch('/rest/v1/profiles?id=eq.' + session.user.id, {
         method: 'PATCH',
         headers: { 'Prefer': 'return=minimal' },
         body: JSON.stringify({ student_type: pending.student_type, company: pending.company || null })
       });
-      localStorage.removeItem('bt-pending-profile');
-    }catch(e){ /* not fatal — profile just won't have student_type set yet */ }
+      // Only clear the pending marker once the write actually succeeds —
+      // otherwise a transient server error silently drops the student's
+      // enrollment type/company on the floor and no one finds out.
+      if(res.ok){ localStorage.removeItem('bt-pending-profile'); }
+    }catch(e){ /* not fatal — will retry applying on next login */ }
   }
 
   document.getElementById('signoutBtn').onclick = function(){
