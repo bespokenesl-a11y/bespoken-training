@@ -226,7 +226,7 @@
       });
       var data = await res.json();
       if(!res.ok){
-+        showMsg(msgEl, data.msg || data.error_description || 'Could not create your account. That email may already be registered.', true);
+        showMsg(msgEl, data.msg || data.error_description || 'Could not create your account. That email may already be registered.', true);
         btn.disabled = false; btn.textContent = 'Create account';
         return;
       }
@@ -237,7 +237,7 @@
       localStorage.setItem('bt-pending-profile', JSON.stringify({ student_type: stype, company: company }));
 
       if(data.access_token){
-+        // Confirmation is off (or this project auto-confirms) — we're
+        // Confirmation is off (or this project auto-confirms) — we're
         // signed in immediately.
         saveSession({
           access_token: data.access_token, refresh_token: data.refresh_token,
@@ -263,7 +263,7 @@
     var msgEl = document.getElementById('loginMsg');
     if(!email || !pw){ showMsg(msgEl, 'Enter your email and password.', true); return; }
 
-    btn.disabled = true; btn.textContent = 'Signing in&mdash;';
+    btn.disabled = true; btn.textContent = 'Signing in…';
     try{
       var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
         method: 'POST',
@@ -313,9 +313,9 @@
     var code = document.getElementById('couponInput').value.trim();
     var msgEl = document.getElementById('redeemMsg');
     if(!code){ showMsg(msgEl, 'Enter a code first.', true); return; }
-    btn.disabled = true; btn.textContent = 'Checking&mdash;';
+    btn.disabled = true; btn.textContent = 'Checking…';
     try{
-+      var res = await authFetch('/rest/v1/rpc/redeem_coupon', {
+      var res = await authFetch('/rest/v1/rpc/redeem_coupon', {
         method: 'POST',
         body: JSON.stringify({ p_code: code })
       });
@@ -343,7 +343,7 @@
       var active = rows.find(function(r){ return r.status === 'active' && new Date(r.expires_at) > new Date(); });
       var pending = rows.find(function(r){ return r.status === 'pending'; });
       if(active){
-+        var d = new Date(active.expires_at);
+        var d = new Date(active.expires_at);
         summaryEl.innerHTML = '<span class="access-pill active">Active</span> &nbsp;Your training access is open through ' + d.toLocaleDateString() + '.';
       } else if(pending){
         summaryEl.innerHTML = '<span class="access-pill pending">Pending approval</span> &nbsp;Your corporate sponsor enrollment is waiting on approval.';
