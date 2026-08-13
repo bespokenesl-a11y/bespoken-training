@@ -138,6 +138,7 @@
 
   var qs = new URLSearchParams(location.search);
   var returnTo = qs.get('return_to');
+  var purpose = qs.get('purpose');
 
   function saveSession(s){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
@@ -389,16 +390,22 @@
     // redeem-code UI has no business showing up when someone is just here
     // to get bounced back to a free diagnostic assessment. That UI only
     // matters once someone is actually starting training (Grammar not yet
-    // set up, Vocabulary, Phonics), which today means a direct visit to
-    // this app with no return_to.
-    if(returnTo){
+    // set up, Vocabulary, Language Clarity), which is signaled either by a
+    // direct visit to this app (no return_to) or by return_to carrying
+    // purpose=training (the Training tab on the main site sends people
+    // here with that flag).
+    if(returnTo && purpose !== 'training'){
       document.getElementById('trainingAccessBlock').classList.add('hidden');
       document.getElementById('assessmentReturnBlock').classList.remove('hidden');
+    } else {
+      refreshAccessSummary();
+    }
 
-      // Hand off to whatever assessment sent us here, now that we have a
-      // session. Tokens travel in the URL fragment (never sent to the server
-      // in a Referer header the way query params can be) and the receiving
-      // app is expected to read + immediately strip them from the address bar.
+    if(returnTo){
+      // Hand off to whatever sent us here, now that we have a session.
+      // Tokens travel in the URL fragment (never sent to the server in a
+      // Referer header the way query params can be) and the receiving app
+      // is expected to read + immediately strip them from the address bar.
       var url = new URL(returnTo);
       url.hash = 'bt_access_token=' + encodeURIComponent(session.access_token) +
                  '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
@@ -408,8 +415,6 @@
       goBtn.textContent = 'Continue';
       goBtn.onclick = function(){ location.href = url.toString(); };
       document.getElementById('dashCard').appendChild(goBtn);
-    } else {
-      refreshAccessSummary();
     }
   }
 
