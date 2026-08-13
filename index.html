@@ -246,7 +246,20 @@
         await applyPendingProfile();
         enterDashboard();
       } else {
-        showMsg(msgEl, 'Almost there — check ' + email + ' for a confirmation link, then come back and sign in.', false);
+        msgEl.className = 'msg ok';
+        msgEl.textContent = '';
+        msgEl.appendChild(document.createTextNode('Almost there — check ' + email + ' for a confirmation link, then come back and sign in. Already used this email before? No new email is sent for an existing account — '));
+        var alreadyLink = document.createElement('a');
+        alreadyLink.textContent = 'sign in instead';
+        alreadyLink.style.color = 'var(--ice)';
+        alreadyLink.style.cursor = 'pointer';
+        alreadyLink.style.textDecoration = 'underline';
+        alreadyLink.onclick = function(){
+          document.getElementById('signupView').classList.add('hidden');
+          document.getElementById('loginView').classList.remove('hidden');
+        };
+        msgEl.appendChild(alreadyLink);
+        msgEl.appendChild(document.createTextNode('.'));
         btn.disabled = false; btn.textContent = 'Create account';
       }
     }catch(e){
