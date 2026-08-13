@@ -1,0 +1,527 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bespoken English — Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --navy:#1E2761;
+    --navy2:#141b4d;
+    --ice:#CADCFC;
+    --white:#FFFFFF;
+    --gray:#9aa1b8;
+    --line:#2c3568;
+    --ok:#6fbf73;
+    --warn:#e3a857;
+    --bad:#e2637a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--navy2);
+    color:var(--white);
+    min-height:100vh;
+    padding:32px 24px 80px;
+  }
+  h1{font-family:Cambria,'Times New Roman',serif; margin:0 0 4px;}
+  .sub{color:var(--gray); margin:0 0 28px;}
+  .wrap{max-width:960px; margin:0 auto;}
+  #gate, #denied{text-align:center; padding:80px 20px; color:var(--ice);}
+  #denied a{color:var(--ice);}
+  .hidden{display:none !important;}
+  .panel{
+    background:var(--navy);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:22px 24px;
+    margin-bottom:24px;
+  }
+  .panel h2{margin:0 0 4px; font-size:19px;}
+  .panel .desc{color:var(--gray); font-size:13px; margin:0 0 16px;}
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{text-align:left; color:var(--gray); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; padding:6px 10px; border-bottom:1px solid var(--line);}
+  td{padding:10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .empty{color:var(--gray); font-size:14px; padding:8px 2px;}
+  .pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+  .pill.active{background:#1c3a24; color:var(--ok);}
+  .pill.pending{background:#3a3218; color:var(--warn);}
+  .pill.none{background:#3a1c26; color:var(--bad);}
+  .pill.expired{background:#3a1c26; color:var(--bad);}
+  select, input[type=text], input[type=number], input[type=email], textarea{
+    background:#0f1440; color:var(--white); border:1px solid var(--line);
+    border-radius:6px; padding:8px 10px; font-size:14px; font-family:inherit;
+  }
+  .btn{
+    background:var(--ice); color:var(--navy); border:none; border-radius:8px;
+    padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .btn:hover{filter:brightness(1.05);}
+  .btn.secondary{background:transparent; color:var(--ice); border:1px solid var(--ice);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .row-msg{font-size:12px; margin-top:4px;}
+  .form-grid{display:flex; flex-wrap:wrap; gap:12px; align-items:end;}
+  .field{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--gray);}
+  .code-result{
+    margin-top:16px; padding:16px; background:#0f1440; border-radius:8px;
+    border:1px dashed var(--ice); display:none;
+  }
+  .code-result .code{font-size:22px; font-weight:800; letter-spacing:.06em; color:var(--ice);}
+  .top-row{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px;}
+  .signout{color:var(--gray); font-size:13px; cursor:pointer; text-decoration:underline;}
+  .tip{color:var(--gray); font-size:12px; margin-top:10px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="gate">Checking access…</div>
+    <div id="denied" class="hidden">
+      <h1>Not authorized</h1>
+      <p>This page is for Bespoken English staff only.</p>
+      <p><a href="index.html">Back to sign in</a></p>
+    </div>
+
+    <div id="app" class="hidden">
+      <div class="top-row">
+        <div>
+          <h1>Admin</h1>
+          <p class="sub">Bespoken English — staff dashboard</p>
+        </div>
+        <div>
+          <span id="whoami" style="color:var(--gray); font-size:13px;"></span>
+          &nbsp;·&nbsp;<span class="signout" id="signoutBtn">Sign out</span>
+        </div>
+      </div>
+
+      <div class="panel" id="pendingPanel">
+        <h2>Pending approvals</h2>
+        <p class="desc">Students who signed up as corporate-sponsored but don't have access yet. Approving grants access directly — no code needed.</p>
+        <table id="pendingTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Signed up</th><th>Grant length</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty hidden" id="pendingEmpty">No one is waiting on approval right now.</div>
+      </div>
+
+      <div class="panel" id="couponPanel">
+        <h2>Generate a coupon code</h2>
+        <p class="desc">Creates a code and shows it here. Nothing is emailed automatically — copy it and send it yourself.</p>
+        <div class="form-grid">
+          <div class="field">Student type
+            <select id="couponType">
+              <option value="private">Private</option>
+              <option value="corporate_sponsor">Corporate sponsor</option>
+            </select>
+          </div>
+          <div class="field">Grants months
+            <input type="number" id="couponMonths" value="1" min="1" style="width:80px;">
+          </div>
+          <div class="field">Issued to (optional email)
+            <input type="email" id="couponEmail" placeholder="student@example.com" style="width:200px;">
+          </div>
+          <div class="field">Note (optional)
+            <input type="text" id="couponNote" placeholder="e.g. referral, promo" style="width:220px;">
+          </div>
+          <button class="btn" id="couponGenBtn">Generate code</button>
+        </div>
+        <div class="row-msg" id="couponMsg"></div>
+        <div class="code-result" id="couponResult">
+          <div style="color:var(--gray); font-size:12px; margin-bottom:4px;">New code</div>
+          <div class="code" id="couponCodeText"></div>
+          <button class="btn secondary" id="couponCopyBtn" style="margin-top:10px;">Copy</button>
+        </div>
+      </div>
+
+      <div class="panel" id="rosterPanel">
+        <h2>Roster</h2>
+        <p class="desc">Everyone who has created an account.</p>
+        <table id="rosterTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Access</th><th>Expires</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="panel" id="renewalsPanel">
+        <h2>Renewals due soon</h2>
+        <p class="desc">Active access expiring within 14 days.</p>
+        <table id="renewalsTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Expires</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty hidden" id="renewalsEmpty">Nothing coming up in the next two weeks.</div>
+        <p class="tip">Tip: if Gmail is your default mail handler in Chrome (chrome://settings/handlers), these open as a pre-filled compose window that Gmail autosaves as a draft within a few seconds.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  var SUPABASE_URL = "https://zqcwhsxaawmrckbglcim.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
+  var STORAGE_KEY = "bt-session";
+  var LOGIN_URL = "index.html";
+
+  function loadSession(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
+    catch(e){ return null; }
+  }
+  function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+  function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
+
+  function parseHashTokens(){
+    var hash = location.hash || "";
+    if (hash.indexOf("bt_access_token=") === -1) return null;
+    var params = new URLSearchParams(hash.replace(/^#/, ""));
+    var at = params.get("bt_access_token");
+    var rt = params.get("bt_refresh_token");
+    if (!at) return null;
+    return { access_token: at, refresh_token: rt };
+  }
+
+  function redirectToLogin(){
+    var returnTo = location.href.split("#")[0];
+    location.href = LOGIN_URL + "?return_to=" + encodeURIComponent(returnTo) + "&purpose=training";
+  }
+
+  function authFetch(path, opts){
+    opts = opts || {};
+    var session = loadSession();
+    var headers = {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + ((session && session.access_token) || ""),
+      "Content-Type": "application/json"
+    };
+    if (opts.headers){ for (var k in opts.headers){ headers[k] = opts.headers[k]; } }
+    opts.headers = headers;
+    return fetch(SUPABASE_URL + path, opts);
+  }
+
+  var currentUser = null;
+
+  function esc(s){
+    var d = document.createElement("div");
+    d.textContent = (s === null || s === undefined) ? "" : String(s);
+    return d.innerHTML;
+  }
+
+  function fmtDate(iso){
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function monthsFromNow(n){
+    var d = new Date();
+    d.setMonth(d.getMonth() + n);
+    return d.toISOString();
+  }
+
+  // ---------- init / auth ----------
+
+  function init(){
+    var fromHash = parseHashTokens();
+    if (fromHash){
+      saveSession(fromHash);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    var session = loadSession();
+    if (!session || !session.access_token){
+      redirectToLogin();
+      return;
+    }
+    authFetch("/auth/v1/user").then(function(res){
+      if (!res.ok){ redirectToLogin(); return; }
+      return res.json().then(function(user){
+        currentUser = user;
+        return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=is_admin,full_name,email");
+      });
+    }).then(function(res){
+      if (!res) return;
+      return res.json();
+    }).then(function(rows){
+      if (!rows) return;
+      var profile = rows[0];
+      if (!profile || !profile.is_admin){
+        document.getElementById("gate").classList.add("hidden");
+        document.getElementById("denied").classList.remove("hidden");
+        return;
+      }
+      document.getElementById("whoami").textContent = "Signed in as " + (profile.email || currentUser.email || "");
+      document.getElementById("gate").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      loadAll();
+    }).catch(function(){
+      document.getElementById("gate").textContent = "Something went wrong checking your access. Please refresh.";
+    });
+  }
+
+  function loadAll(){
+    loadPendingAndRoster();
+    // couponPanel needs no initial load
+  }
+
+  // ---------- shared data load (profiles + access_grants), feeds pending / roster / renewals ----------
+
+  function loadPendingAndRoster(){
+    Promise.all([
+      authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+      authFetch("/rest/v1/access_grants?select=user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; })
+    ]).then(function(results){
+      var profiles = results[0] || [];
+      var grants = results[1] || [];
+      var grantsByUser = {};
+      grants.forEach(function(g){
+        // keep the most-recently-expiring grant per user (list is already sorted desc)
+        if (!grantsByUser[g.user_id]) grantsByUser[g.user_id] = g;
+      });
+      renderRoster(profiles, grantsByUser);
+      renderPending(profiles, grantsByUser);
+      renderRenewals(profiles, grantsByUser);
+    }).catch(function(){
+      document.getElementById("rosterTable").querySelector("tbody").innerHTML = "";
+    });
+  }
+
+  function statusPillHtml(grant){
+    var now = new Date();
+    if (!grant) return '<span class="pill none">No access</span>';
+    if (grant.status === "active" && grant.expires_at && new Date(grant.expires_at) > now){
+      return '<span class="pill active">Active</span>';
+    }
+    if (grant.status === "pending"){
+      return '<span class="pill pending">Pending</span>';
+    }
+    return '<span class="pill expired">Expired</span>';
+  }
+
+  function renderRoster(profiles, grantsByUser){
+    var tbody = document.querySelector("#rosterTable tbody");
+    tbody.innerHTML = "";
+    profiles.forEach(function(p){
+      var grant = grantsByUser[p.id];
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>" + esc(p.full_name || "—") + "</td>" +
+        "<td>" + esc(p.email || "—") + "</td>" +
+        "<td>" + esc(p.company || "—") + "</td>" +
+        "<td>" + esc(p.student_type || "—") + "</td>" +
+        "<td>" + statusPillHtml(grant) + "</td>" +
+        "<td>" + (grant ? esc(fmtDate(grant.expires_at)) : "—") + "</td>";
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderPending(profiles, grantsByUser){
+    var tbody = document.querySelector("#pendingTable tbody");
+    tbody.innerHTML = "";
+    var pending = profiles.filter(function(p){
+      return p.student_type === "corporate_sponsor" && !grantsByUser[p.id];
+    });
+    document.getElementById("pendingEmpty").classList.toggle("hidden", pending.length > 0);
+    pending.forEach(function(p){
+      var tr = document.createElement("tr");
+      var tdName = document.createElement("td"); tdName.textContent = p.full_name || "—";
+      var tdEmail = document.createElement("td"); tdEmail.textContent = p.email || "—";
+      var tdCompany = document.createElement("td"); tdCompany.textContent = p.company || "—";
+      var tdSignedUp = document.createElement("td"); tdSignedUp.textContent = fmtDate(p.created_at);
+
+      var tdMonths = document.createElement("td");
+      var monthsSel = document.createElement("select");
+      [1,3,6,12].forEach(function(m){
+        var opt = document.createElement("option");
+        opt.value = m; opt.textContent = m + (m === 1 ? " month" : " months");
+        if (m === 1) opt.selected = true;
+        monthsSel.appendChild(opt);
+      });
+      tdMonths.appendChild(monthsSel);
+
+      var tdAction = document.createElement("td");
+      var btn = document.createElement("button");
+      btn.className = "btn"; btn.textContent = "Grant access";
+      var msg = document.createElement("div"); msg.className = "row-msg";
+      btn.addEventListener("click", function(){
+        btn.disabled = true; btn.textContent = "Granting…";
+        var months = parseInt(monthsSel.value, 10);
+        approveSponsor(p, months, function(ok, err){
+          if (ok){
+            msg.textContent = "Access granted.";
+            msg.style.color = "var(--ok)";
+            btn.textContent = "Granted";
+            setTimeout(loadPendingAndRoster, 800);
+          } else {
+            btn.disabled = false; btn.textContent = "Grant access";
+            msg.textContent = err || "Something went wrong.";
+            msg.style.color = "var(--bad)";
+          }
+        });
+      });
+      tdAction.appendChild(btn);
+      tdAction.appendChild(msg);
+
+      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCompany);
+      tr.appendChild(tdSignedUp); tr.appendChild(tdMonths); tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function approveSponsor(profile, months, cb){
+    var body = {
+      user_id: profile.id,
+      student_type: "corporate_sponsor",
+      sponsor_org: profile.company || null,
+      status: "active",
+      starts_at: new Date().toISOString(),
+      expires_at: monthsFromNow(months),
+      granted_by: currentUser.id
+    };
+    authFetch("/rest/v1/access_grants", {
+      method: "POST",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify(body)
+    }).then(function(res){
+      if (res.ok) { cb(true); }
+      else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
+    }).catch(function(){ cb(false, "Network error."); });
+  }
+
+  function renderRenewals(profiles, grantsByUser){
+    var tbody = document.querySelector("#renewalsTable tbody");
+    tbody.innerHTML = "";
+    var now = new Date();
+    var soon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    var profileById = {};
+    profiles.forEach(function(p){ profileById[p.id] = p; });
+
+    var due = Object.keys(grantsByUser).map(function(uid){
+      return { profile: profileById[uid], grant: grantsByUser[uid] };
+    }).filter(function(row){
+      if (!row.profile || !row.grant) return false;
+      if (row.grant.status !== "active") return false;
+      var exp = new Date(row.grant.expires_at);
+      return exp > now && exp <= soon;
+    }).sort(function(a,b){ return new Date(a.grant.expires_at) - new Date(b.grant.expires_at); });
+
+    document.getElementById("renewalsEmpty").classList.toggle("hidden", due.length > 0);
+
+    due.forEach(function(row){
+      var p = row.profile, g = row.grant;
+      var tr = document.createElement("tr");
+      var tdName = document.createElement("td"); tdName.textContent = p.full_name || "—";
+      var tdEmail = document.createElement("td"); tdEmail.textContent = p.email || "—";
+      var tdExp = document.createElement("td"); tdExp.textContent = fmtDate(g.expires_at);
+      var tdAction = document.createElement("td");
+      var btn = document.createElement("button");
+      btn.className = "btn secondary"; btn.textContent = "Create reminder draft";
+      btn.addEventListener("click", function(){
+        btn.disabled = true; btn.textContent = "Preparing…";
+        buildReminderMailto(p, g).then(function(url){
+          window.open(url, "_blank");
+          btn.disabled = false; btn.textContent = "Create reminder draft";
+        });
+      });
+      tdAction.appendChild(btn);
+      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdExp); tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function buildReminderMailto(profile, grant){
+    return authFetch("/rest/v1/grammar_diagnostic_results?user_id=eq." + encodeURIComponent(profile.id) + "&select=overall_pct,test_type,created_at&order=created_at.desc&limit=1")
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .catch(function(){ return []; })
+      .then(function(rows){
+        var progressLine = "";
+        if (rows && rows[0] && rows[0].overall_pct !== null && rows[0].overall_pct !== undefined){
+          progressLine = "Last time we checked in, your grammar score was " + Math.round(rows[0].overall_pct) + "% — nice work. ";
+        }
+        var name = (profile.full_name || "").split(" ")[0] || "there";
+        var subject = "Time to renew your Bespoken English training access";
+        var body =
+          "Hi " + name + ",\n\n" +
+          "I wanted to check in on your training with Bespoken English. " + progressLine + "\n\n" +
+          "Your access is set to expire on " + fmtDate(grant.expires_at) + ". If you'd like to keep going, just reply to this email and I'll get you set up.\n\n" +
+          "Education made just for you.\n\n" +
+          "Bespoken English";
+        var mailto = "mailto:" + encodeURIComponent(profile.email || "") +
+          "?subject=" + encodeURIComponent(subject) +
+          "&body=" + encodeURIComponent(body);
+        return mailto;
+      });
+  }
+
+  // ---------- coupon generator ----------
+
+  function generateCode(){
+    var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+    var s = "";
+    for (var i = 0; i < 6; i++){ s += chars.charAt(Math.floor(Math.random() * chars.length)); }
+    return "BE-" + s;
+  }
+
+  document.getElementById("couponGenBtn").addEventListener("click", function(){
+    var btn = document.getElementById("couponGenBtn");
+    var msg = document.getElementById("couponMsg");
+    var type = document.getElementById("couponType").value;
+    var months = parseInt(document.getElementById("couponMonths").value, 10) || 1;
+    var email = document.getElementById("couponEmail").value.trim();
+    var note = document.getElementById("couponNote").value.trim();
+    var code = generateCode();
+
+    btn.disabled = true; btn.textContent = "Generating…"; msg.textContent = "";
+
+    authFetch("/rest/v1/coupon_codes", {
+      method: "POST",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        code: code,
+        student_type: type,
+        grants_months: months,
+        issued_to_email: email || null,
+        note: note || null,
+        created_by: currentUser.id
+      })
+    }).then(function(res){
+      btn.disabled = false; btn.textContent = "Generate code";
+      if (res.ok){
+        document.getElementById("couponCodeText").textContent = code;
+        document.getElementById("couponResult").style.display = "block";
+        msg.textContent = "";
+        document.getElementById("couponEmail").value = "";
+        document.getElementById("couponNote").value = "";
+      } else {
+        res.json().catch(function(){ return {}; }).then(function(e){
+          msg.style.color = "var(--bad)";
+          msg.textContent = (e && e.message) || "Couldn't create that code. Please try again.";
+        });
+      }
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = "Generate code";
+      msg.style.color = "var(--bad)";
+      msg.textContent = "Network error.";
+    });
+  });
+
+  document.getElementById("couponCopyBtn").addEventListener("click", function(){
+    var text = document.getElementById("couponCodeText").textContent;
+    navigator.clipboard.writeText(text).then(function(){
+      var btn = document.getElementById("couponCopyBtn");
+      var old = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(function(){ btn.textContent = old; }, 1500);
+    });
+  });
+
+  document.getElementById("signoutBtn").addEventListener("click", function(){
+    clearSession();
+    redirectToLogin();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
