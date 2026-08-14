@@ -73,6 +73,24 @@
   .top-row{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px;}
   .signout{color:var(--gray); font-size:13px; cursor:pointer; text-decoration:underline;}
   .tip{color:var(--gray); font-size:12px; margin-top:10px;}
+  .word-chip{display:inline-flex; align-items:center; gap:5px; background:#0f1440; border:1px solid var(--line); border-radius:999px; padding:4px 10px 4px 6px; font-size:12px; margin:3px 4px 3px 0;}
+  .word-chip input{margin:0;}
+  .word-pool{max-height:220px; overflow-y:auto; padding:6px 2px; border:1px solid var(--line); border-radius:8px; margin:6px 0;}
+  .group-card{background:#0f1440; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:10px;}
+  .group-card .gc-top{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+  .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;}
+  .badge.pass{background:#1c3a24; color:var(--ok);}
+  .badge.fail{background:#3a1c26; color:var(--bad);}
+  .badge.training{background:#3a3218; color:var(--warn);}
+  .student-block{border-bottom:1px solid var(--line); padding:16px 0;}
+  .student-block:last-child{border-bottom:none;}
+  .student-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px;}
+  .student-head .sname{font-weight:700;}
+  .student-head .smeta{color:var(--gray); font-size:12px;}
+  .mini-btn{background:transparent; color:var(--ice); border:1px solid var(--ice); border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
+  .mini-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .stat-line{font-size:13px; color:var(--ice); margin:4px 0;}
+  .soon-note{background:#0f1440; border:1px dashed var(--line); border-radius:8px; padding:12px 14px; color:var(--gray); font-size:13px;}
 </style>
 </head>
 <body>
@@ -153,6 +171,24 @@
         </table>
         <div class="empty hidden" id="renewalsEmpty">Nothing coming up in the next two weeks.</div>
         <p class="tip">Tip: if Gmail is your default mail handler in Chrome (chrome://settings/handlers), these open as a pre-filled compose window that Gmail autosaves as a draft within a few seconds.</p>
+      </div>
+
+      <div class="panel" id="vocabTrainingPanel">
+        <h2>Vocabulary — training groups</h2>
+        <p class="desc">Pulled from each student's missed words across all categories (Consulting/Finance/GRE/Medical/SAT combined, not split by category). Pick the words to bundle into a group, sell them the time, and record results here once they've worked through it.</p>
+        <div id="vocabTrainingBody"><div class="empty">Loading…</div></div>
+      </div>
+
+      <div class="panel" id="vocabProgressPanel">
+        <h2>Vocabulary — progress &amp; payment report</h2>
+        <p class="desc">Groups ready for a check-in or just completed. Use this to decide when to prompt a student, and to follow up for payment on the next round.</p>
+        <div id="vocabProgressBody"><div class="empty">Loading…</div></div>
+      </div>
+
+      <div class="panel" id="grammarTrainingPanel">
+        <h2>Grammar — training groups <span style="font-size:12px; color:var(--gray); font-weight:400;">(scaffold)</span></h2>
+        <p class="desc">Pre-test is in place. Training, post-test, and the retrain funnel aren't built yet — this mirrors the vocabulary structure (objectives instead of words) so it's ready to wire up once that's defined.</p>
+        <div class="soon-note">grammar_training_groups table exists and is wired for admin access, but no UI actions yet. Next: define how a grammar training group is built from missed objectives in grammar_diagnostic_results, then add create/record-post-test actions here same as vocabulary.</div>
       </div>
     </div>
   </div>
@@ -261,6 +297,8 @@
 
   function loadAll(){
     loadPendingAndRoster();
+    loadVocabTraining();
+    loadVocabProgress();
     // couponPanel needs no initial load
   }
 
@@ -515,7 +553,366 @@
     });
   });
 
-  document.getElementById("signoutBtn").addEventListener("click", function(){
+
+  // ---------- vocabulary training groups (Phase 4) ----------
+
+  function vocabPoolFromResults(results){
+    // results is the placement_results.results jsonb: { con:{pct,score,total,missed:[...]}, fin:{...}, ... }
+    var totalWords = 0;
+    var missed = [];
+    if (!results) return { totalWords: 0, missed: [] };
+    Object.keys(results).forEach(function(cat){
+      var c = results[cat];
+      if (!c) return;
+      totalWords += (c.total || 0);
+      (c.missed || []).forEach(function(w){ missed.push({ word: w, category: cat }); });
+    });
+    return { totalWords: totalWords, missed: missed };
+  }
+
+  function computeVocabState(preResults, groups){
+    var base = vocabPoolFromResults(preResults);
+    var status = {}; // word -> 'unassigned' | 'training' | 'mastered' | 'missed'
+    base.missed.forEach(function(m){ status[m.word] = { category: m.category, state: 'unassigned' }; });
+    var sorted = (groups || []).slice().sort(function(a,b){ return a.round_number - b.round_number; });
+    var openGroup = null;
+    sorted.forEach(function(g){
+      (g.words || []).forEach(function(w){
+        status[w.word] = { category: w.category, state: (g.status === 'completed') ? (w.status === 'mastered' ? 'mastered' : 'missed') : 'training' };
+      });
+      if (g.status !== 'completed') openGroup = g;
+    });
+    var pool = [];
+    var masteredCount = 0;
+    Object.keys(status).forEach(function(word){
+      var s = status[word];
+      if (s.state === 'mastered') masteredCount++;
+      if (s.state === 'unassigned' || s.state === 'missed') pool.push({ word: word, category: s.category });
+    });
+    return { totalWords: base.totalWords, pool: pool, masteredCount: masteredCount, openGroup: openGroup, wordStatus: status };
+  }
+
+  var vocabCache = null; // { profiles, preByUser, groupsByUser }
+
+  function loadVocabTrainingData(){
+    return Promise.all([
+      authFetch("/rest/v1/profiles?select=id,full_name,email&order=full_name.asc").then(function(r){ return r.ok ? r.json() : []; }),
+      authFetch("/rest/v1/placement_results?user_id=not.is.null&test_type=eq.pre&select=user_id,results,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+      authFetch("/rest/v1/vocab_training_groups?select=*&order=round_number.asc").then(function(r){ return r.ok ? r.json() : []; })
+    ]).then(function(results){
+      var profiles = results[0] || [];
+      var preRows = results[1] || [];
+      var groupRows = results[2] || [];
+      var preByUser = {};
+      preRows.forEach(function(row){ if (!preByUser[row.user_id]) preByUser[row.user_id] = row; }); // most recent pre-test per user
+      var groupsByUser = {};
+      groupRows.forEach(function(g){
+        if (!groupsByUser[g.user_id]) groupsByUser[g.user_id] = [];
+        groupsByUser[g.user_id].push(g);
+      });
+      vocabCache = { profiles: profiles, preByUser: preByUser, groupsByUser: groupsByUser };
+      return vocabCache;
+    });
+  }
+
+  function loadVocabTraining(){
+    var body = document.getElementById("vocabTrainingBody");
+    loadVocabTrainingData().then(function(cache){
+      var studentsWithPre = cache.profiles.filter(function(p){ return cache.preByUser[p.id]; });
+      if (!studentsWithPre.length){
+        body.innerHTML = '<div class="empty">No students have a vocabulary pre-test tied to their account yet (needs user_id on placement_results).</div>';
+        return;
+      }
+      body.innerHTML = "";
+      studentsWithPre.forEach(function(p){
+        body.appendChild(renderStudentVocabBlock(p, cache));
+      });
+    }).catch(function(){
+      body.innerHTML = '<div class="empty">Couldn\'t load vocabulary training data.</div>';
+    });
+  }
+
+  function renderStudentVocabBlock(profile, cache){
+    var preRow = cache.preByUser[profile.id];
+    var groups = cache.groupsByUser[profile.id] || [];
+    var state = computeVocabState(preRow.results, groups);
+
+    var wrap = document.createElement("div");
+    wrap.className = "student-block";
+
+    var head = document.createElement("div");
+    head.className = "student-head";
+    head.innerHTML =
+      '<div><span class="sname">' + esc(profile.full_name || profile.email || "—") + '</span> ' +
+      '<span class="smeta">' + esc(profile.email || "") + '</span></div>' +
+      '<div class="smeta">' + state.masteredCount + ' / ' + state.totalWords + ' words mastered</div>';
+    wrap.appendChild(head);
+
+    if (state.openGroup){
+      var openNote = document.createElement("div");
+      openNote.className = "stat-line";
+      openNote.textContent = "Round " + state.openGroup.round_number + " is currently in training (" + (state.openGroup.words || []).length + " words" + (state.openGroup.time_estimate ? ", sold: " + state.openGroup.time_estimate : "") + ") — record results below before starting a new group.";
+      wrap.appendChild(openNote);
+    } else if (state.pool.length){
+      wrap.appendChild(renderCreateGroupForm(profile, state, groups));
+    } else {
+      var doneNote = document.createElement("div");
+      doneNote.className = "stat-line";
+      doneNote.textContent = "No missed words waiting in the pool right now.";
+      wrap.appendChild(doneNote);
+    }
+
+    groups.slice().sort(function(a,b){ return b.round_number - a.round_number; }).forEach(function(g){
+      wrap.appendChild(renderGroupCard(profile, g));
+    });
+
+    return wrap;
+  }
+
+  function renderCreateGroupForm(profile, state, existingGroups){
+    var box = document.createElement("div");
+    var poolLabel = document.createElement("div");
+    poolLabel.className = "stat-line";
+    poolLabel.textContent = "Missed-word pool (" + state.pool.length + " words, all categories):";
+    box.appendChild(poolLabel);
+
+    var poolDiv = document.createElement("div");
+    poolDiv.className = "word-pool";
+    state.pool.forEach(function(item){
+      var chip = document.createElement("label");
+      chip.className = "word-chip";
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.checked = true; cb.value = item.word; cb.setAttribute("data-cat", item.category);
+      chip.appendChild(cb);
+      var txt = document.createElement("span");
+      txt.textContent = item.word + " (" + item.category + ")";
+      chip.appendChild(txt);
+      poolDiv.appendChild(chip);
+    });
+    box.appendChild(poolDiv);
+
+    var formRow = document.createElement("div");
+    formRow.className = "form-grid";
+    var estField = document.createElement("div");
+    estField.className = "field";
+    estField.innerHTML = 'Time sold (free text)<input type="text" placeholder="e.g. 3 hours over 2 weeks" style="width:220px;">';
+    formRow.appendChild(estField);
+    var btn = document.createElement("button");
+    btn.className = "btn"; btn.textContent = "Create training group";
+    formRow.appendChild(btn);
+    var msg = document.createElement("div");
+    msg.className = "row-msg";
+    box.appendChild(formRow);
+    box.appendChild(msg);
+
+    btn.addEventListener("click", function(){
+      var checked = Array.prototype.slice.call(poolDiv.querySelectorAll("input[type=checkbox]:checked"));
+      if (!checked.length){ msg.style.color = "var(--bad)"; msg.textContent = "Select at least one word."; return; }
+      var words = checked.map(function(cb){ return { word: cb.value, category: cb.getAttribute("data-cat"), status: "training" }; });
+      var nextRound = existingGroups.reduce(function(m,g){ return Math.max(m, g.round_number); }, 0) + 1;
+      var estInput = estField.querySelector("input");
+      btn.disabled = true; btn.textContent = "Creating…";
+      authFetch("/rest/v1/vocab_training_groups", {
+        method: "POST",
+        headers: { "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          user_id: profile.id,
+          round_number: nextRound,
+          words: words,
+          time_estimate: estInput.value.trim() || null,
+          status: "assigned"
+        })
+      }).then(function(res){
+        if (res.ok){
+          msg.style.color = "var(--ok)"; msg.textContent = "Group created.";
+          setTimeout(loadVocabTraining, 700);
+        } else {
+          btn.disabled = false; btn.textContent = "Create training group";
+          res.json().catch(function(){ return {}; }).then(function(e){
+            msg.style.color = "var(--bad)"; msg.textContent = (e && e.message) || "Something went wrong.";
+          });
+        }
+      }).catch(function(){
+        btn.disabled = false; btn.textContent = "Create training group";
+        msg.style.color = "var(--bad)"; msg.textContent = "Network error.";
+      });
+    });
+
+    return box;
+  }
+
+  function renderGroupCard(profile, group){
+    var card = document.createElement("div");
+    card.className = "group-card";
+    var words = group.words || [];
+    var top = document.createElement("div");
+    top.className = "gc-top";
+    var statusBadge = "";
+    if (group.status === "completed"){
+      statusBadge = '<span class="badge ' + (group.post_test_pct >= 85 ? "pass" : "fail") + '">' + Math.round(group.post_test_pct || 0) + '% on post-test</span>';
+    } else {
+      statusBadge = '<span class="badge training">In training</span>';
+    }
+    top.innerHTML =
+      '<div><b>Round ' + group.round_number + '</b> — ' + words.length + ' words' +
+      (group.time_estimate ? ' · sold: ' + esc(group.time_estimate) : '') +
+      ' · created ' + fmtDate(group.created_at) + '</div>' +
+      '<div>' + statusBadge + '</div>';
+    card.appendChild(top);
+
+    if (group.status !== "completed"){
+      var recordBtn = document.createElement("button");
+      recordBtn.className = "mini-btn";
+      recordBtn.textContent = "Record post-test results";
+      recordBtn.style.marginTop = "10px";
+      card.appendChild(recordBtn);
+      var formHolder = document.createElement("div");
+      card.appendChild(formHolder);
+      recordBtn.addEventListener("click", function(){
+        recordBtn.style.display = "none";
+        formHolder.appendChild(renderRecordPostTestForm(profile, group, words));
+      });
+    } else {
+      var stillMissed = words.filter(function(w){ return w.status !== "mastered"; }).map(function(w){ return w.word; });
+      if (stillMissed.length){
+        var missedLine = document.createElement("div");
+        missedLine.className = "stat-line";
+        missedLine.style.color = "var(--gray)";
+        missedLine.textContent = "Still missed: " + stillMissed.join(", ");
+        card.appendChild(missedLine);
+      }
+    }
+    return card;
+  }
+
+  function renderRecordPostTestForm(profile, group, words){
+    var box = document.createElement("div");
+    box.style.marginTop = "8px";
+    var label = document.createElement("div");
+    label.className = "stat-line";
+    label.textContent = "Check the words this student STILL got wrong on the post-test (leave unchecked = mastered):";
+    box.appendChild(label);
+    var poolDiv = document.createElement("div");
+    poolDiv.className = "word-pool";
+    words.forEach(function(w){
+      var chip = document.createElement("label");
+      chip.className = "word-chip";
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.value = w.word; cb.setAttribute("data-cat", w.category);
+      chip.appendChild(cb);
+      var txt = document.createElement("span"); txt.textContent = w.word + " (" + w.category + ")";
+      chip.appendChild(txt);
+      poolDiv.appendChild(chip);
+    });
+    box.appendChild(poolDiv);
+    var btn = document.createElement("button");
+    btn.className = "btn"; btn.textContent = "Save post-test results";
+    var msg = document.createElement("div"); msg.className = "row-msg";
+    box.appendChild(btn); box.appendChild(msg);
+
+    btn.addEventListener("click", function(){
+      var stillMissedWords = Array.prototype.slice.call(poolDiv.querySelectorAll("input[type=checkbox]:checked")).map(function(cb){ return cb.value; });
+      var updatedWords = words.map(function(w){
+        return { word: w.word, category: w.category, status: stillMissedWords.indexOf(w.word) === -1 ? "mastered" : "missed" };
+      });
+      var masteredNow = updatedWords.filter(function(w){ return w.status === "mastered"; }).length;
+      var pct = words.length ? Math.round((masteredNow / words.length) * 1000) / 10 : 0;
+      btn.disabled = true; btn.textContent = "Saving…";
+      authFetch("/rest/v1/vocab_training_groups?id=eq." + encodeURIComponent(group.id), {
+        method: "PATCH",
+        headers: { "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          words: updatedWords,
+          status: "completed",
+          post_test_pct: pct,
+          completed_at: new Date().toISOString()
+        })
+      }).then(function(res){
+        if (res.ok){
+          msg.style.color = "var(--ok)";
+          msg.textContent = pct >= 85 ? "Saved — " + pct + "% mastered. Nice work to pass along!" : "Saved — " + pct + "% mastered.";
+          setTimeout(function(){ loadVocabTraining(); loadVocabProgress(); }, 900);
+        } else {
+          btn.disabled = false; btn.textContent = "Save post-test results";
+          res.json().catch(function(){ return {}; }).then(function(e){
+            msg.style.color = "var(--bad)"; msg.textContent = (e && e.message) || "Something went wrong.";
+          });
+        }
+      }).catch(function(){
+        btn.disabled = false; btn.textContent = "Save post-test results";
+        msg.style.color = "var(--bad)"; msg.textContent = "Network error.";
+      });
+    });
+
+    return box;
+  }
+
+  // ---------- vocabulary progress & payment report ----------
+
+  function loadVocabProgress(){
+    var body = document.getElementById("vocabProgressBody");
+    var dataPromise = vocabCache ? Promise.resolve(vocabCache) : loadVocabTrainingData();
+    dataPromise.then(function(cache){
+      var rows = [];
+      cache.profiles.forEach(function(p){
+        var preRow = cache.preByUser[p.id];
+        if (!preRow) return;
+        var groups = cache.groupsByUser[p.id] || [];
+        if (!groups.length) return;
+        var state = computeVocabState(preRow.results, groups);
+        var latest = groups.slice().sort(function(a,b){ return b.round_number - a.round_number; })[0];
+        rows.push({ profile: p, state: state, latest: latest });
+      });
+      if (!rows.length){
+        body.innerHTML = '<div class="empty">No training groups yet — create one above to start tracking progress.</div>';
+        return;
+      }
+      body.innerHTML = "";
+      rows.forEach(function(row){
+        body.appendChild(renderProgressRow(row));
+      });
+    }).catch(function(){
+      body.innerHTML = '<div class="empty">Couldn\'t load progress data.</div>';
+    });
+  }
+
+  function renderProgressRow(row){
+    var p = row.profile, state = row.state, latest = row.latest;
+    var card = document.createElement("div");
+    card.className = "group-card";
+
+    var target90 = Math.ceil(state.totalWords * 0.9);
+    var remaining = Math.max(0, target90 - state.masteredCount);
+    var weeks = remaining > 0 ? Math.ceil(remaining / 10) : 0;
+
+    var lines = [];
+    lines.push('<div class="gc-top"><div><b>' + esc(p.full_name || p.email || "—") + '</b> <span class="smeta">' + esc(p.email || "") + '</span></div>' +
+      '<div>' + (latest.status === "completed"
+        ? '<span class="badge ' + (latest.post_test_pct >= 85 ? "pass" : "fail") + '">Round ' + latest.round_number + ': ' + Math.round(latest.post_test_pct || 0) + '%</span>'
+        : '<span class="badge training">Round ' + latest.round_number + ' in training</span>') + '</div></div>');
+
+    lines.push('<div class="stat-line">' + state.masteredCount + ' / ' + state.totalWords + ' words mastered overall.</div>');
+
+    if (remaining > 0){
+      lines.push('<div class="stat-line">Needs ' + remaining + ' more mastered words to reach 90% overall — about ' + weeks + ' week' + (weeks === 1 ? "" : "s") + ' at 10 new words/week.</div>');
+    } else {
+      lines.push('<div class="stat-line" style="color:var(--ok);">Hit the 90% overall goal — hearty congratulations due!</div>');
+    }
+
+    if (latest.status !== "completed" && latest.time_estimate){
+      lines.push('<div class="stat-line" style="color:var(--gray);">Sold time for round ' + latest.round_number + ': ' + esc(latest.time_estimate) + ' (started ' + fmtDate(latest.created_at) + ') — check in and prompt them when ready.</div>');
+    }
+
+    if (latest.status === "completed"){
+      lines.push('<div class="stat-line" style="color:var(--gray);">Round ' + latest.round_number + ' finished ' + fmtDate(latest.completed_at) + '. If they want to keep going, ask about ' + weeks + ' more week' + (weeks === 1 ? "" : "s") + ' and follow up for payment.</div>');
+    }
+
+    card.innerHTML = lines.join("");
+    return card;
+  }
+
+
+    document.getElementById("signoutBtn").addEventListener("click", function(){
     clearSession();
     redirectToLogin();
   });
