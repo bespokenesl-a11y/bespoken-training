@@ -122,6 +122,12 @@
         <div class="msg" id="redeemMsg"></div>
       </div>
     </div>
+
+    <div id="vocabRoundBlock" class="hidden">
+      <h1>Your training</h1>
+      <p class="sub" id="vocabRoundSummary"></p>
+      <a class="btn" id="vocabRoundLink" href="#" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;text-align:center;">Take your check-in</a>
+    </div>
   </div>
 </div>
 
@@ -380,6 +386,24 @@
     }
   }
 
+  function loadVocabRoundStatus(){
+    var session = loadSession();
+    var block = document.getElementById('vocabRoundBlock');
+    var summaryEl = document.getElementById('vocabRoundSummary');
+    var linkEl = document.getElementById('vocabRoundLink');
+    if(!session || !session.user) return;
+    authFetch('/rest/v1/vocab_training_groups?user_id=eq.' + session.user.id + '&status=neq.completed&order=round_number.desc&limit=1').then(function(res){
+      return res.json();
+    }).then(function(rows){
+      var group = rows[0];
+      if(!group){ return; }
+      var n = (group.words || []).length;
+      summaryEl.textContent = 'Round ' + group.round_number + ' is ready for your check-in \u2014 ' + n + ' word' + (n === 1 ? '' : 's') + '.';
+      linkEl.href = 'https://ephemeral-cranachan-fb33bc.netlify.app/retest.html';
+      block.classList.remove('hidden');
+    }).catch(function(){ /* silent - rest of dashboard still works */ });
+  }
+
   function enterDashboard(){
     var session = loadSession();
     document.getElementById('authCard').classList.add('hidden');
@@ -399,6 +423,7 @@
       document.getElementById('assessmentReturnBlock').classList.remove('hidden');
     } else {
       refreshAccessSummary();
+      loadVocabRoundStatus();
     }
 
     if(returnTo){
