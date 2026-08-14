@@ -761,17 +761,12 @@
     card.appendChild(top);
 
     if (group.status !== "completed"){
-      var recordBtn = document.createElement("button");
-      recordBtn.className = "mini-btn";
-      recordBtn.textContent = "Record post-test results";
-      recordBtn.style.marginTop = "10px";
-      card.appendChild(recordBtn);
-      var formHolder = document.createElement("div");
-      card.appendChild(formHolder);
-      recordBtn.addEventListener("click", function(){
-        recordBtn.style.display = "none";
-        formHolder.appendChild(renderRecordPostTestForm(profile, group, words));
-      });
+      var waitNote = document.createElement("div");
+      waitNote.className = "stat-line";
+      waitNote.style.color = "var(--gray)";
+      waitNote.style.marginTop = "8px";
+      waitNote.textContent = "Waiting on the student to take their auto-graded post-test.";
+      card.appendChild(waitNote);
     } else {
       var stillMissed = words.filter(function(w){ return w.status !== "mastered"; }).map(function(w){ return w.word; });
       if (stillMissed.length){
@@ -783,68 +778,6 @@
       }
     }
     return card;
-  }
-
-  function renderRecordPostTestForm(profile, group, words){
-    var box = document.createElement("div");
-    box.style.marginTop = "8px";
-    var label = document.createElement("div");
-    label.className = "stat-line";
-    label.textContent = "Check the words this student STILL got wrong on the post-test (leave unchecked = mastered):";
-    box.appendChild(label);
-    var poolDiv = document.createElement("div");
-    poolDiv.className = "word-pool";
-    words.forEach(function(w){
-      var chip = document.createElement("label");
-      chip.className = "word-chip";
-      var cb = document.createElement("input");
-      cb.type = "checkbox"; cb.value = w.word; cb.setAttribute("data-cat", w.category);
-      chip.appendChild(cb);
-      var txt = document.createElement("span"); txt.textContent = w.word + " (" + w.category + ")";
-      chip.appendChild(txt);
-      poolDiv.appendChild(chip);
-    });
-    box.appendChild(poolDiv);
-    var btn = document.createElement("button");
-    btn.className = "btn"; btn.textContent = "Save post-test results";
-    var msg = document.createElement("div"); msg.className = "row-msg";
-    box.appendChild(btn); box.appendChild(msg);
-
-    btn.addEventListener("click", function(){
-      var stillMissedWords = Array.prototype.slice.call(poolDiv.querySelectorAll("input[type=checkbox]:checked")).map(function(cb){ return cb.value; });
-      var updatedWords = words.map(function(w){
-        return { word: w.word, category: w.category, status: stillMissedWords.indexOf(w.word) === -1 ? "mastered" : "missed" };
-      });
-      var masteredNow = updatedWords.filter(function(w){ return w.status === "mastered"; }).length;
-      var pct = words.length ? Math.round((masteredNow / words.length) * 1000) / 10 : 0;
-      btn.disabled = true; btn.textContent = "Saving…";
-      authFetch("/rest/v1/vocab_training_groups?id=eq." + encodeURIComponent(group.id), {
-        method: "PATCH",
-        headers: { "Prefer": "return=minimal" },
-        body: JSON.stringify({
-          words: updatedWords,
-          status: "completed",
-          post_test_pct: pct,
-          completed_at: new Date().toISOString()
-        })
-      }).then(function(res){
-        if (res.ok){
-          msg.style.color = "var(--ok)";
-          msg.textContent = pct >= 85 ? "Saved — " + pct + "% mastered. Nice work to pass along!" : "Saved — " + pct + "% mastered.";
-          setTimeout(function(){ loadVocabTraining(); loadVocabProgress(); }, 900);
-        } else {
-          btn.disabled = false; btn.textContent = "Save post-test results";
-          res.json().catch(function(){ return {}; }).then(function(e){
-            msg.style.color = "var(--bad)"; msg.textContent = (e && e.message) || "Something went wrong.";
-          });
-        }
-      }).catch(function(){
-        btn.disabled = false; btn.textContent = "Save post-test results";
-        msg.style.color = "var(--bad)"; msg.textContent = "Network error.";
-      });
-    });
-
-    return box;
   }
 
   // ---------- vocabulary progress & payment report ----------
