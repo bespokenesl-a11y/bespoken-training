@@ -157,7 +157,7 @@
         <h2>Roster</h2>
         <p class="desc">Everyone who has created an account.</p>
         <table id="rosterTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Access</th><th>Expires</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Code</th><th>Access</th><th>Expires</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -307,16 +307,23 @@
   function loadPendingAndRoster(){
     Promise.all([
       authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
-      authFetch("/rest/v1/access_grants?select=user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; })
+      authFetch("/rest/v1/access_grants?select=id,user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+      authFetch("/rest/v1/coupon_codes?select=code,redeemed_by,redeemed_at&redeemed_by=not.is.null&order=redeemed_at.desc").then(function(r){ return r.ok ? r.json() : []; })
     ]).then(function(results){
       var profiles = results[0] || [];
       var grants = results[1] || [];
+      var codes = results[2] || [];
       var grantsByUser = {};
       grants.forEach(function(g){
         // keep the most-recently-expiring grant per user (list is already sorted desc)
         if (!grantsByUser[g.user_id]) grantsByUser[g.user_id] = g;
       });
-      renderRoster(profiles, grantsByUser);
+      var codeByUser = {};
+      codes.forEach(function(c){
+        // keep the most-recently-redeemed code per user (list is already sorted desc)
+        if (!codeByUser[c.redeemed_by]) codeByUser[c.redeemed_by] = c;
+      });
+      renderRoster(profiles, grantsByUser, codeByUser);
       renderPending(profiles, grantsByUser);
       renderRenewals(profiles, grantsByUser);
     }).catch(function(){
@@ -336,21 +343,59 @@
     return '<span class="pill expired">Expired</span>';
   }
 
-  function renderRoster(profiles, grantsByUser){
+  function renderRoster(profiles, grantsByUser, codeByUser){
     var tbody = document.querySelector("#rosterTable tbody");
     tbody.innerHTML = "";
     profiles.forEach(function(p){
       var grant = grantsByUser[p.id];
+      var code = codeByUser ? codeByUser[p.id] : null;
       var tr = document.createElement("tr");
       tr.innerHTML =
         "<td>" + esc(p.full_name || "—") + "</td>" +
         "<td>" + esc(p.email || "—") + "</td>" +
         "<td>" + esc(p.company || "—") + "</td>" +
         "<td>" + esc(p.student_type || "—") + "</td>" +
+        "<td>" + (code ? esc(code.code) : "—") + "</td>" +
         "<td>" + statusPillHtml(grant) + "</td>" +
         "<td>" + (grant ? esc(fmtDate(grant.expires_at)) : "—") + "</td>";
+      var tdAction = document.createElement("td");
+      if (grant){
+        var btn = document.createElement("button");
+        btn.className = "btn secondary";
+        btn.textContent = "Renew +1 month";
+        btn.addEventListener("click", function(){
+          btn.disabled = true; btn.textContent = "Renewing…";
+          renewGrant(grant, function(ok, err){
+            if (ok){
+              loadPendingAndRoster();
+            } else {
+              btn.disabled = false; btn.textContent = "Renew +1 month";
+              alert(err || "Something went wrong.");
+            }
+          });
+        });
+        tdAction.appendChild(btn);
+      } else {
+        tdAction.textContent = "—";
+      }
+      tr.appendChild(tdAction);
       tbody.appendChild(tr);
     });
+  }
+
+  function renewGrant(grant, cb){
+    var now = new Date();
+    var base = (grant.expires_at && new Date(grant.expires_at) > now) ? new Date(grant.expires_at) : now;
+    var newExpiry = new Date(base.getTime());
+    newExpiry.setMonth(newExpiry.getMonth() + 1);
+    authFetch("/rest/v1/access_grants?id=eq." + encodeURIComponent(grant.id), {
+      method: "PATCH",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify({ expires_at: newExpiry.toISOString() })
+    }).then(function(res){
+      if (res.ok) { cb(true); }
+      else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
+    }).catch(function(){ cb(false, "Network error."); });
   }
 
   function renderPending(profiles, grantsByUser){
