@@ -63,8 +63,8 @@
   <!-- ===== Signed-out: auth card ===== -->
   <div class="card" id="authCard">
     <div id="signupView">
-      <h1>Create your account</h1>
-      <p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere.</p>
+      <h1>Create your account or sign in</h1>
+      <p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere. New here? Fill in your name and enrollment info, then choose Create account. Already registered? Just enter your email and password, then choose Sign in.</p>
       <label for="su-name">Full name</label>
       <input type="text" id="su-name" autocomplete="name">
       <label for="su-email">Email address</label>
@@ -82,20 +82,9 @@
         <div class="field-hint">We'll use this to match you with your sponsor's approval.</div>
       </div>
       <button class="btn" id="signupBtn">Create account</button>
+      <button class="btn btn-ghost" id="loginBtn">Sign in</button>
       <div class="msg" id="signupMsg"></div>
-      <div class="switch">Already have an account? <a id="toLogin">Sign in</a></div>
-    </div>
-
-    <div class="hidden" id="loginView">
-      <h1>Sign in</h1>
-      <p class="sub">Use the same email and password you created for your assessment.</p>
-      <label for="li-email">Email address</label>
-      <input type="email" id="li-email" autocomplete="email">
-      <label for="li-pw">Password</label>
-      <input type="password" id="li-pw" autocomplete="current-password">
-      <button class="btn" id="loginBtn">Sign in</button>
       <div class="msg" id="loginMsg"></div>
-      <div class="switch">Need an account? <a id="toSignup">Create one</a></div>
     </div>
   </div>
 
@@ -198,15 +187,6 @@
     el.className = 'msg ' + (isError ? 'error' : 'ok');
   }
 
-  // ---- signup / login view toggle ----
-  document.getElementById('toLogin').onclick = function(){
-    document.getElementById('signupView').classList.add('hidden');
-    document.getElementById('loginView').classList.remove('hidden');
-  };
-  document.getElementById('toSignup').onclick = function(){
-    document.getElementById('loginView').classList.add('hidden');
-    document.getElementById('signupView').classList.remove('hidden');
-  };
   Array.prototype.forEach.call(document.querySelectorAll('input[name=stype]'), function(r){
     r.onchange = function(){
       document.getElementById('companyField').classList.toggle('show', r.value === 'corporate_sponsor' && r.checked);
@@ -263,17 +243,16 @@
       } else {
         msgEl.className = 'msg ok';
         msgEl.textContent = '';
-        msgEl.appendChild(document.createTextNode('Almost there — check ' + email + ' for a confirmation link, then come back and sign in. Already used this email before? No new email is sent for an existing account — '));
+        msgEl.appendChild(document.createTextNode('Almost there — check ' + email + ' for a confirmation link, then come back and use the Sign in button below. Already used this email before? No new email is sent for an existing account — '));
         var alreadyLink = document.createElement('a');
-        alreadyLink.textContent = 'sign in instead';
+        alreadyLink.textContent = 'sign in below';
         alreadyLink.style.color = 'var(--ice)';
         alreadyLink.style.cursor = 'pointer';
         alreadyLink.style.textDecoration = 'underline';
         alreadyLink.onclick = function(){
-          document.getElementById('signupView').classList.add('hidden');
-          document.getElementById('loginView').classList.remove('hidden');
-        };
-        msgEl.appendChild(alreadyLink);
+        document.getElementById('su-pw').focus();
+      };
+      msgEl.appendChild(alreadyLink);
         msgEl.appendChild(document.createTextNode('.'));
         btn.disabled = false; btn.textContent = 'Create account';
       }
@@ -286,8 +265,8 @@
   // ---- log in ----
   document.getElementById('loginBtn').onclick = async function(){
     var btn = this;
-    var email = document.getElementById('li-email').value.trim();
-    var pw = document.getElementById('li-pw').value;
+    var email = document.getElementById('su-email').value.trim();
+    var pw = document.getElementById('su-pw').value;
     var msgEl = document.getElementById('loginMsg');
     if(!email || !pw){ showMsg(msgEl, 'Enter your email and password.', true); return; }
 
