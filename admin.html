@@ -114,6 +114,16 @@
         </div>
       </div>
 
+      <div class="panel" id="subPanel">
+        <h2>Subscription requests</h2>
+        <p class="desc">Students who finished a placement test and clicked "Ready to begin training?" Send them a PayPal invoice for their first month, then mark it invoiced.</p>
+        <table id="subTable">
+          <thead><tr><th>Name</th><th>Email</th><th>Track</th><th>Requested</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty hidden" id="subEmpty">No pending subscription requests right now.</div>
+      </div>
+
       <div class="panel" id="pendingPanel">
         <h2>Pending approvals</h2>
         <p class="desc">Students who signed up as corporate-sponsored but don't have access yet. Approving grants access directly — no code needed.</p>
@@ -296,10 +306,62 @@
   }
 
   function loadAll(){
+    loadSubscriptionRequests();
     loadPendingAndRoster();
     loadVocabTraining();
     loadVocabProgress();
     // couponPanel needs no initial load
+  }
+
+  // ---------- subscription requests (from placement/diagnostic results screens) ----------
+
+  var SUB_TRACK_LABELS = { vocabulary: "Vocabulary", grammar: "Grammar", language_clarity: "Language Clarity" };
+
+  function loadSubscriptionRequests(){
+    authFetch("/rest/v1/subscription_requests?status=eq.pending&select=id,user_id,email,full_name,track,requested_at&order=requested_at.asc").then(function(r){ return r.ok ? r.json() : []; }).then(renderSubscriptionRequests);
+  }
+
+  function renderSubscriptionRequests(rows){
+    var tbody = document.querySelector("#subTable tbody");
+    tbody.innerHTML = "";
+    rows = rows || [];
+    document.getElementById("subEmpty").classList.toggle("hidden", rows.length > 0);
+    rows.forEach(function(req){
+      var tr = document.createElement("tr");
+      var tdName = document.createElement("td"); tdName.textContent = req.full_name || "—";
+      var tdEmail = document.createElement("td"); tdEmail.textContent = req.email || "—";
+      var tdTrack = document.createElement("td"); tdTrack.textContent = SUB_TRACK_LABELS[req.track] || req.track || "—";
+      var tdWhen = document.createElement("td"); tdWhen.textContent = fmtDate(req.requested_at);
+      var tdAction = document.createElement("td");
+      var btn = document.createElement("button");
+      btn.className = "btn";
+      btn.textContent = "Mark invoiced";
+      btn.addEventListener("click", function(){
+        btn.disabled = true; btn.textContent = "Saving…";
+        markInvoiced(req, function(ok, err){
+          if (ok){
+            loadSubscriptionRequests();
+          } else {
+            btn.disabled = false; btn.textContent = "Mark invoiced";
+            alert(err || "Something went wrong.");
+          }
+        });
+      });
+      tdAction.appendChild(btn);
+      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdTrack); tr.appendChild(tdWhen); tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function markInvoiced(req, cb){
+    authFetch("/rest/v1/subscription_requests?id=eq." + encodeURIComponent(req.id), {
+      method: "PATCH",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify({ status: "invoiced", invoiced_at: new Date().toISOString() })
+    }).then(function(res){
+      if (res.ok) { cb(true); }
+      else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
+    }).catch(function(){ cb(false, "Network error."); });
   }
 
   // ---------- shared data load (profiles + access_grants), feeds pending / roster / renewals ----------
