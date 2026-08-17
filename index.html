@@ -49,6 +49,16 @@
   .access-pill.active{background:rgba(46,125,91,.2);color:#8fe0bb;}
   .access-pill.pending{background:rgba(227,168,87,.2);color:#e3a857;}
   .access-pill.none{background:rgba(154,161,184,.15);color:var(--ink-dim);}
+  .track-list{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
+  .track-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .track-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
+  .track-card-head strong{font-size:14.5px;}
+  .track-card-sub{color:var(--ink-dim);font-size:13px;margin:0 0 10px;line-height:1.4;}
+  .track-btn{display:inline-block;background:var(--ice);color:var(--navy);font-weight:700;font-size:13px;padding:8px 14px;border-radius:8px;text-decoration:none;}
+  .track-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;}
+  .track-pill.ready{background:rgba(227,168,87,.2);color:#e3a857;}
+  .track-pill.waiting{background:rgba(154,161,184,.15);color:var(--ink-dim);}
+  .track-pill.done{background:rgba(46,125,91,.2);color:#8fe0bb;}
   .hidden{display:none;}
   .company-field{display:none;}
   .company-field.show{display:block;}
@@ -112,11 +122,11 @@
       </div>
     </div>
 
-    <div id="vocabRoundBlock" class="hidden">
-      <h1>Your training</h1>
-      <p class="sub" id="vocabRoundSummary"></p>
-      <a class="btn" id="vocabRoundLink" href="#" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;text-align:center;">Take your check-in</a>
-    </div>
+    <div id="trainingTracksBlock" class="hidden">
+    <h1>Your Training</h1>
+    <p class="sub">Pick a track below to jump back in.</p>
+    <div id="trackList" class="track-list"></div>
+  </div>
   </div>
 </div>
 
@@ -365,22 +375,64 @@
     }
   }
 
-  function loadVocabRoundStatus(){
+  async function loadTrainingTracks(){
     var session = loadSession();
-    var block = document.getElementById('vocabRoundBlock');
-    var summaryEl = document.getElementById('vocabRoundSummary');
-    var linkEl = document.getElementById('vocabRoundLink');
     if(!session || !session.user) return;
-    authFetch('/rest/v1/vocab_training_groups?user_id=eq.' + session.user.id + '&status=neq.completed&order=round_number.desc&limit=1').then(function(res){
-      return res.json();
-    }).then(function(rows){
-      var group = rows[0];
-      if(!group){ return; }
+    var block = document.getElementById('trainingTracksBlock');
+    var listEl = document.getElementById('trackList');
+    listEl.innerHTML = '';
+    try{
+      var card = await buildVocabTrackCard(session);
+      if(card){ listEl.appendChild(card); }
+    }catch(e){ /* silent — rest of dashboard still works */ }
+    if(listEl.children.length){ block.classList.remove('hidden'); }
+  }
+
+  async function buildVocabTrackCard(session){
+    var hasRes = await authFetch('/rest/v1/placement_results?user_id=eq.' + session.user.id + '&test_type=eq.pre&select=id&limit=1');
+    var hasRows = hasRes.ok ? await hasRes.json() : [];
+    if(!hasRows.length) return null;
+
+    var groupRes = await authFetch('/rest/v1/vocab_training_groups?user_id=eq.' + session.user.id + '&select=round_number,words,status&order=round_number.desc&limit=1');
+    var groupRows = groupRes.ok ? await groupRes.json() : [];
+    var group = groupRows[0];
+
+    var pillClass = 'waiting', pillText = 'Preparing';
+    var sub = "You've completed your placement test \u2014 we're building your personalized training now. Check back soon.";
+    var link = null;
+
+    if(group && group.status !== 'completed'){
       var n = (group.words || []).length;
-      summaryEl.textContent = 'Round ' + group.round_number + ' is ready for your check-in \u2014 ' + n + ' word' + (n === 1 ? '' : 's') + '.';
-      linkEl.href = 'https://ephemeral-cranachan-fb33bc.netlify.app/retest.html#bt_access_token=' + encodeURIComponent(session.access_token) + '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
-      block.classList.remove('hidden');
-    }).catch(function(){ /* silent - rest of dashboard still works */ });
+      pillClass = 'ready'; pillText = 'Ready';
+      sub = 'Round ' + group.round_number + ' is ready for your check-in \u2014 ' + n + ' word' + (n === 1 ? '' : 's') + '.';
+      link = 'https://ephemeral-cranachan-fb33bc.netlify.app/retest.html#bt_access_token=' + encodeURIComponent(session.access_token) + '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
+    } else if(group && group.status === 'completed'){
+      pillClass = 'done'; pillText = 'Complete';
+      sub = "You've completed your assigned vocabulary training. Nice work!";
+    }
+
+    var card = document.createElement('div');
+    card.className = 'track-card';
+    var head = document.createElement('div');
+    head.className = 'track-card-head';
+    var strong = document.createElement('strong');
+    strong.textContent = 'Vocabulary Building';
+    var pill = document.createElement('span');
+    pill.className = 'track-pill ' + pillClass;
+    pill.textContent = pillText;
+    head.appendChild(strong); head.appendChild(pill);
+    var subEl = document.createElement('p');
+    subEl.className = 'track-card-sub';
+    subEl.textContent = sub;
+    card.appendChild(head); card.appendChild(subEl);
+    if(link){
+      var a = document.createElement('a');
+      a.className = 'track-btn';
+      a.href = link; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = 'Continue training \u2192';
+      card.appendChild(a);
+    }
+    return card;
   }
 
   function enterDashboard(){
@@ -402,7 +454,7 @@
       document.getElementById('assessmentReturnBlock').classList.remove('hidden');
     } else {
       refreshAccessSummary();
-      loadVocabRoundStatus();
+      loadTrainingTracks();
     }
 
     if(returnTo){
