@@ -368,7 +368,7 @@
 
   function loadPendingAndRoster(){
     Promise.all([
-      authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+      authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
       authFetch("/rest/v1/access_grants?select=id,user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
       authFetch("/rest/v1/coupon_codes?select=code,redeemed_by,redeemed_at&redeemed_by=not.is.null&order=redeemed_at.desc").then(function(r){ return r.ok ? r.json() : []; })
     ]).then(function(results){
@@ -440,9 +440,127 @@
       } else {
         tdAction.textContent = "—";
       }
+      if (!p.is_admin){
+        tdAction.appendChild(buildDeleteControl(p));
+      }
       tr.appendChild(tdAction);
       tbody.appendChild(tr);
     });
+  }
+
+  function buildDeleteControl(profile){
+    var holder = document.createElement("div");
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "mini-btn";
+    delBtn.style.borderColor = "var(--bad)";
+    delBtn.style.color = "var(--bad)";
+    delBtn.textContent = "Delete";
+
+    var confirmBox = document.createElement("div");
+    confirmBox.className = "hidden";
+    confirmBox.style.marginTop = "6px";
+
+    var warn = document.createElement("div");
+    warn.className = "row-msg";
+    warn.style.color = "var(--bad)";
+    warn.style.maxWidth = "220px";
+    warn.textContent = "Permanently deletes " + (profile.full_name || profile.email || "this student") + " — all results, training history, and their login. Cannot be undone. Type their name or email to confirm:";
+    confirmBox.appendChild(warn);
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = profile.full_name || profile.email || "";
+    input.style.width = "160px";
+    input.style.marginTop = "6px";
+    input.style.display = "block";
+    confirmBox.appendChild(input);
+
+    var btnRow = document.createElement("div");
+    btnRow.style.marginTop = "6px";
+
+    var confirmBtn = document.createElement("button");
+    confirmBtn.className = "mini-btn";
+    confirmBtn.style.borderColor = "var(--bad)";
+    confirmBtn.style.color = "var(--bad)";
+    confirmBtn.textContent = "Confirm delete";
+    confirmBtn.disabled = true;
+
+    var cancelBtn = document.createElement("button");
+    cancelBtn.className = "mini-btn";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.style.marginLeft = "6px";
+
+    btnRow.appendChild(confirmBtn);
+    btnRow.appendChild(cancelBtn);
+    confirmBox.appendChild(btnRow);
+
+    var msg = document.createElement("div");
+    msg.className = "row-msg";
+    confirmBox.appendChild(msg);
+
+    holder.appendChild(delBtn);
+    holder.appendChild(confirmBox);
+
+    function matches(){
+      var v = input.value.trim().toLowerCase();
+      if (!v) return false;
+      var name = (profile.full_name || "").trim().toLowerCase();
+      var email = (profile.email || "").trim().toLowerCase();
+      return (name && v === name) || (email && v === email);
+    }
+
+    input.addEventListener("input", function(){
+      confirmBtn.disabled = !matches();
+    });
+    input.addEventListener("keydown", function(e){
+      if (e.key === "Enter" && matches()) confirmBtn.click();
+    });
+
+    delBtn.addEventListener("click", function(){
+      delBtn.classList.add("hidden");
+      confirmBox.classList.remove("hidden");
+      input.focus();
+    });
+
+    cancelBtn.addEventListener("click", function(){
+      input.value = "";
+      confirmBtn.disabled = true;
+      msg.textContent = "";
+      confirmBox.classList.add("hidden");
+      delBtn.classList.remove("hidden");
+    });
+
+    confirmBtn.addEventListener("click", function(){
+      if (!matches()) return;
+      confirmBtn.disabled = true; cancelBtn.disabled = true;
+      confirmBtn.textContent = "Deleting…";
+      msg.textContent = "";
+      authFetch("/functions/v1/delete-student", {
+        method: "POST",
+        body: JSON.stringify({ user_id: profile.id })
+      }).then(function(res){
+        return res.json().catch(function(){ return {}; }).then(function(data){
+          if (res.ok && data.success){
+            msg.style.color = "var(--ok)";
+            msg.textContent = "Deleted.";
+            setTimeout(loadPendingAndRoster, 700);
+          } else {
+            confirmBtn.disabled = false; cancelBtn.disabled = false;
+            confirmBtn.textContent = "Confirm delete";
+            msg.style.color = "var(--bad)";
+            msg.textContent = (data && data.error) || "Something went wrong.";
+          }
+        });
+      }).catch(function(){
+        confirmBtn.disabled = false; cancelBtn.disabled = false;
+        confirmBtn.textContent = "Confirm delete";
+        msg.style.color = "var(--bad)";
+        msg.textContent = "Network error.";
+      });
+    });
+
+    return holder;
   }
 
   function renewGrant(grant, cb){
