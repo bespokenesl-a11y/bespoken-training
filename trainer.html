@@ -1,0 +1,455 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bespoken English — Trainer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --navy:#1E2761;
+    --navy2:#141b4d;
+    --ice:#CADCFC;
+    --white:#FFFFFF;
+    --gray:#9aa1b8;
+    --line:#2c3568;
+    --ok:#6fbf73;
+    --warn:#e3a857;
+    --bad:#e2637a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--navy2);
+    color:var(--white);
+    min-height:100vh;
+    padding:32px 24px 80px;
+  }
+  h1{font-family:Cambria,'Times New Roman',serif; margin:0 0 4px;}
+  .sub{color:var(--gray); margin:0 0 28px;}
+  .wrap{max-width:960px; margin:0 auto;}
+  #gate, #denied{text-align:center; padding:80px 20px; color:var(--ice);}
+  #denied a{color:var(--ice);}
+  .hidden{display:none !important;}
+  .panel{
+    background:var(--navy);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:22px 24px;
+    margin-bottom:24px;
+  }
+  .panel h2{margin:0 0 4px; font-size:19px;}
+  .panel .desc{color:var(--gray); font-size:13px; margin:0 0 16px;}
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{text-align:left; color:var(--gray); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; padding:6px 10px; border-bottom:1px solid var(--line);}
+  td{padding:10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .empty{color:var(--gray); font-size:14px; padding:8px 2px;}
+  .pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+  .pill.ok{background:#1c3a24; color:var(--ok);}
+  .pill.warn{background:#3a3218; color:var(--warn);}
+  .pill.none{background:#3a1c26; color:var(--bad);}
+  select, input[type=text], input[type=date], textarea{
+    background:#0f1440; color:var(--white); border:1px solid var(--line);
+    border-radius:6px; padding:8px 10px; font-size:14px; font-family:inherit;
+  }
+  textarea{width:100%; min-height:60px; resize:vertical;}
+  .btn{
+    background:var(--ice); color:var(--navy); border:none; border-radius:8px;
+    padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .btn:hover{filter:brightness(1.05);}
+  .btn.secondary{background:transparent; color:var(--ice); border:1px solid var(--ice);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .mini-btn{background:transparent; color:var(--ice); border:1px solid var(--ice); border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
+  .mini-btn:disabled{opacity:.5; cursor:not-allowed;}
+  .row-msg{font-size:12px; margin-top:4px;}
+  .form-grid{display:flex; flex-wrap:wrap; gap:12px; align-items:end;}
+  .field{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--gray);}
+  .top-row{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px;}
+  .signout{color:var(--gray); font-size:13px; cursor:pointer; text-decoration:underline;}
+  .student-block{border-bottom:1px solid var(--line); padding:16px 0;}
+  .student-block:last-child{border-bottom:none;}
+  .student-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px; cursor:pointer;}
+  .student-head .sname{font-weight:700;}
+  .student-head .smeta{color:var(--gray); font-size:12px;}
+  .stat-line{font-size:13px; color:var(--ice); margin:4px 0;}
+  .notes-area{margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);}
+  .note-row{background:#0f1440; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px; font-size:13px;}
+  .note-row .nmeta{color:var(--gray); font-size:11px; margin-bottom:4px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="gate">Checking access…</div>
+    <div id="denied" class="hidden">
+      <h1>Not authorized</h1>
+      <p>This page is for Bespoken English trainers only.</p>
+      <p><a href="index.html">Back to sign in</a></p>
+    </div>
+
+    <div id="app" class="hidden">
+      <div class="top-row">
+        <div>
+          <h1>Trainer</h1>
+          <p class="sub">Bespoken English — your students' progress</p>
+        </div>
+        <div>
+          <span id="whoami" style="color:var(--gray); font-size:13px;"></span>
+          &nbsp;·&nbsp;<span class="signout" id="signoutBtn">Sign out</span>
+        </div>
+      </div>
+
+      <div class="panel" id="studentsPanel">
+        <h2>My students</h2>
+        <p class="desc">Students currently assigned to you. Click a name to see their progress notes and add a new one.</p>
+        <div id="studentsBody"><div class="empty">Loading…</div></div>
+        <div class="empty hidden" id="studentsEmpty">No students are assigned to you yet — ask an admin to assign you some in the Roster.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  var SUPABASE_URL = "https://zqcwhsxaawmrckbglcim.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
+  var STORAGE_KEY = "bt-session";
+  var LOGIN_URL = "index.html";
+
+  function loadSession(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
+    catch(e){ return null; }
+  }
+  function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+  function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
+
+  function parseHashTokens(){
+    var hash = location.hash || "";
+    if (hash.indexOf("bt_access_token=") === -1) return null;
+    var params = new URLSearchParams(hash.replace(/^#/, ""));
+    var at = params.get("bt_access_token");
+    var rt = params.get("bt_refresh_token");
+    if (!at) return null;
+    return { access_token: at, refresh_token: rt };
+  }
+
+  function redirectToLogin(){
+    var returnTo = location.href.split("#")[0];
+    location.href = LOGIN_URL + "?return_to=" + encodeURIComponent(returnTo) + "&purpose=training";
+  }
+
+  function authFetch(path, opts){
+    opts = opts || {};
+    var session = loadSession();
+    var headers = {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + ((session && session.access_token) || ""),
+      "Content-Type": "application/json"
+    };
+    if (opts.headers){ for (var k in opts.headers){ headers[k] = opts.headers[k]; } }
+    opts.headers = headers;
+    return fetch(SUPABASE_URL + path, opts);
+  }
+
+  var currentUser = null;
+
+  function esc(s){
+    var d = document.createElement("div");
+    d.textContent = (s === null || s === undefined) ? "" : String(s);
+    return d.innerHTML;
+  }
+
+  function fmtDate(iso){
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function todayStr(){
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  // ---------- init / auth ----------
+
+  function init(){
+    var fromHash = parseHashTokens();
+    if (fromHash){
+      saveSession(fromHash);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    var session = loadSession();
+    if (!session || !session.access_token){
+      redirectToLogin();
+      return;
+    }
+    authFetch("/auth/v1/user").then(function(res){
+      if (!res.ok){ redirectToLogin(); return; }
+      return res.json().then(function(user){
+        currentUser = user;
+        return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=is_trainer,full_name,email");
+      });
+    }).then(function(res){
+      if (!res) return;
+      return res.json();
+    }).then(function(rows){
+      if (!rows) return;
+      var profile = rows[0];
+      if (!profile || !profile.is_trainer){
+        document.getElementById("gate").classList.add("hidden");
+        document.getElementById("denied").classList.remove("hidden");
+        return;
+      }
+      document.getElementById("whoami").textContent = "Signed in as " + (profile.email || currentUser.email || "");
+      document.getElementById("gate").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      loadStudents();
+    }).catch(function(){
+      document.getElementById("gate").textContent = "Something went wrong checking your access. Please refresh.";
+    });
+  }
+
+  // ---------- vocab helpers (same logic as admin.html, kept in sync) ----------
+
+  function vocabPoolFromResults(results){
+    var totalWords = 0;
+    var missed = [];
+    if (!results) return { totalWords: 0, missed: [] };
+    Object.keys(results).forEach(function(cat){
+      var c = results[cat];
+      if (!c) return;
+      totalWords += (c.total || 0);
+      (c.missed || []).forEach(function(w){ missed.push({ word: w, category: cat }); });
+    });
+    return { totalWords: totalWords, missed: missed };
+  }
+
+  function computeVocabState(preResults, groups){
+    var base = vocabPoolFromResults(preResults);
+    var status = {};
+    base.missed.forEach(function(m){ status[m.word] = { category: m.category, state: 'unassigned' }; });
+    var sorted = (groups || []).slice().sort(function(a,b){ return a.round_number - b.round_number; });
+    sorted.forEach(function(g){
+      (g.words || []).forEach(function(w){
+        status[w.word] = { category: w.category, state: (g.status === 'completed') ? (w.status === 'mastered' ? 'mastered' : 'missed') : 'training' };
+      });
+    });
+    var masteredCount = 0;
+    Object.keys(status).forEach(function(word){
+      if (status[word].state === 'mastered') masteredCount++;
+    });
+    return { totalWords: base.totalWords, masteredCount: masteredCount };
+  }
+
+  // ---------- students ----------
+
+  function loadStudents(){
+    var body = document.getElementById("studentsBody");
+    authFetch("/rest/v1/profiles?trainer_id=eq." + encodeURIComponent(currentUser.id) + "&select=id,full_name,email,company,student_type&order=full_name.asc")
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(students){
+        document.getElementById("studentsEmpty").classList.toggle("hidden", students.length > 0);
+        if (!students.length){ body.innerHTML = ""; return; }
+        return Promise.all([
+          Promise.all(students.map(function(s){
+            return authFetch("/rest/v1/grammar_diagnostic_results?user_id=eq." + encodeURIComponent(s.id) + "&select=overall_pct,created_at&order=created_at.desc&limit=1")
+              .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+          })),
+          Promise.all(students.map(function(s){
+            return authFetch("/rest/v1/placement_results?user_id=eq." + encodeURIComponent(s.id) + "&test_type=eq.pre&select=results&order=created_at.desc&limit=1")
+              .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+          })),
+          Promise.all(students.map(function(s){
+            return authFetch("/rest/v1/vocab_training_groups?user_id=eq." + encodeURIComponent(s.id) + "&select=*&order=round_number.asc")
+              .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+          }))
+        ]).then(function(all){
+          body.innerHTML = "";
+          students.forEach(function(s, i){
+            var grammarRows = all[0][i] || [];
+            var preRows = all[1][i] || [];
+            var groups = all[2][i] || [];
+            var vocabState = preRows[0] ? computeVocabState(preRows[0].results, groups) : null;
+            body.appendChild(renderStudentBlock(s, grammarRows[0], vocabState));
+          });
+        });
+      })
+      .catch(function(){
+        body.innerHTML = '<div class="empty">Couldn\'t load your students. Please refresh.</div>';
+      });
+  }
+
+  function renderStudentBlock(student, latestGrammar, vocabState){
+    var wrap = document.createElement("div");
+    wrap.className = "student-block";
+
+    var head = document.createElement("div");
+    head.className = "student-head";
+    var metaBits = [];
+    if (latestGrammar && latestGrammar.overall_pct !== null && latestGrammar.overall_pct !== undefined){
+      metaBits.push("Grammar: " + Math.round(latestGrammar.overall_pct) + "%");
+    }
+    if (vocabState){
+      metaBits.push("Vocab: " + vocabState.masteredCount + " / " + vocabState.totalWords + " mastered");
+    }
+    head.innerHTML =
+      '<div><span class="sname">' + esc(student.full_name || student.email || "—") + '</span> ' +
+      '<span class="smeta">' + esc(student.email || "") + (student.company ? " · " + esc(student.company) : "") + '</span></div>' +
+      '<div class="smeta">' + esc(metaBits.join(" · ") || "No results yet") + '</div>';
+    wrap.appendChild(head);
+
+    var notesArea = document.createElement("div");
+    notesArea.className = "notes-area hidden";
+    wrap.appendChild(notesArea);
+
+    var loaded = false;
+    head.addEventListener("click", function(){
+      notesArea.classList.toggle("hidden");
+      if (!notesArea.classList.contains("hidden") && !loaded){
+        loaded = true;
+        loadNotesInto(notesArea, student);
+      }
+    });
+
+    return wrap;
+  }
+
+  function loadNotesInto(container, student){
+    container.innerHTML = '<div class="empty">Loading notes…</div>';
+    authFetch("/rest/v1/progress_log?user_id=eq." + encodeURIComponent(student.id) + "&select=id,session_date,track_id,objective_key,notes,created_at&order=session_date.desc")
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(rows){
+        container.innerHTML = "";
+        if (!rows.length){
+          var empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No notes yet.";
+          container.appendChild(empty);
+        } else {
+          rows.forEach(function(row){
+            var noteDiv = document.createElement("div");
+            noteDiv.className = "note-row";
+            var meta = [fmtDate(row.session_date)];
+            if (row.track_id) meta.push(row.track_id);
+            if (row.objective_key) meta.push(row.objective_key);
+            noteDiv.innerHTML =
+              '<div class="nmeta">' + esc(meta.join(" · ")) + '</div>' +
+              '<div>' + esc(row.notes || "") + '</div>';
+            container.appendChild(noteDiv);
+          });
+        }
+        container.appendChild(renderAddNoteForm(student));
+      })
+      .catch(function(){
+        container.innerHTML = '<div class="empty">Couldn\'t load notes.</div>';
+      });
+  }
+
+  function renderAddNoteForm(student){
+    var form = document.createElement("div");
+    form.style.marginTop = "12px";
+
+    var row1 = document.createElement("div");
+    row1.className = "form-grid";
+
+    var dateField = document.createElement("div");
+    dateField.className = "field";
+    dateField.innerHTML = "Date";
+    var dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.value = todayStr();
+    dateField.appendChild(dateInput);
+    row1.appendChild(dateField);
+
+    var trackField = document.createElement("div");
+    trackField.className = "field";
+    trackField.innerHTML = "Track";
+    var trackSelect = document.createElement("select");
+    ["vocabulary", "grammar", "language_clarity"].forEach(function(t){
+      var o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      trackSelect.appendChild(o);
+    });
+    trackField.appendChild(trackSelect);
+    row1.appendChild(trackField);
+
+    var objField = document.createElement("div");
+    objField.className = "field";
+    objField.innerHTML = "Objective (optional)";
+    var objInput = document.createElement("input");
+    objInput.type = "text";
+    objInput.style.width = "160px";
+    objInput.placeholder = "e.g. conditionals";
+    objField.appendChild(objInput);
+    row1.appendChild(objField);
+
+    form.appendChild(row1);
+
+    var notesField = document.createElement("div");
+    notesField.className = "field";
+    notesField.style.marginTop = "10px";
+    notesField.innerHTML = "Note";
+    var notesArea = document.createElement("textarea");
+    notesField.appendChild(notesArea);
+    form.appendChild(notesField);
+
+    var btnRow = document.createElement("div");
+    btnRow.style.marginTop = "8px";
+    var saveBtn = document.createElement("button");
+    saveBtn.className = "btn";
+    saveBtn.textContent = "Add note";
+    btnRow.appendChild(saveBtn);
+    var msg = document.createElement("div");
+    msg.className = "row-msg";
+    btnRow.appendChild(msg);
+    form.appendChild(btnRow);
+
+    saveBtn.addEventListener("click", function(){
+      var text = notesArea.value.trim();
+      if (!text){ msg.style.color = "var(--bad)"; msg.textContent = "Write a note first."; return; }
+      saveBtn.disabled = true; saveBtn.textContent = "Saving…"; msg.textContent = "";
+      authFetch("/rest/v1/progress_log", {
+        method: "POST",
+        headers: { "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          user_id: student.id,
+          session_date: dateInput.value || todayStr(),
+          track_id: trackSelect.value,
+          objective_key: objInput.value.trim() || null,
+          notes: text
+        })
+      }).then(function(res){
+        saveBtn.disabled = false; saveBtn.textContent = "Add note";
+        if (res.ok){
+          notesArea.value = "";
+          objInput.value = "";
+          var container = form.parentElement;
+          loadNotesInto(container, student);
+        } else {
+          msg.style.color = "var(--bad)";
+          msg.textContent = "Something went wrong.";
+        }
+      }).catch(function(){
+        saveBtn.disabled = false; saveBtn.textContent = "Add note";
+        msg.style.color = "var(--bad)";
+        msg.textContent = "Network error.";
+      });
+    });
+
+    return form;
+  }
+
+  document.getElementById("signoutBtn").addEventListener("click", function(){
+    clearSession();
+    redirectToLogin();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

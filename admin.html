@@ -163,11 +163,28 @@
         </div>
       </div>
 
+      <div class="panel" id="trainersPanel">
+        <h2>Trainers</h2>
+        <p class="desc">Staff with their own login who can view and log notes for their assigned students only. Promote an existing account to trainer, then assign students to them in the Roster below. Removing trainer access doesn't delete their login — it just takes away the trainer dashboard.</p>
+        <div class="form-grid">
+          <div class="field">Promote to trainer
+            <select id="promoteTrainerSelect" style="width:240px;"></select>
+          </div>
+          <button class="btn" id="promoteTrainerBtn">Make trainer</button>
+        </div>
+        <div class="row-msg" id="trainerMsg"></div>
+        <table id="trainersTable" style="margin-top:16px;">
+          <thead><tr><th>Name</th><th>Email</th><th>Students assigned</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty hidden" id="trainersEmpty">No trainers yet.</div>
+      </div>
+
       <div class="panel" id="rosterPanel">
         <h2>Roster</h2>
-        <p class="desc">Everyone who has created an account.</p>
+        <p class="desc">Everyone who has created a student account. Staff accounts (admins and trainers) aren't listed here.</p>
         <table id="rosterTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Code</th><th>Access</th><th>Expires</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Trainer</th><th>Code</th><th>Access</th><th>Expires</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -364,11 +381,11 @@
     }).catch(function(){ cb(false, "Network error."); });
   }
 
-  // ---------- shared data load (profiles + access_grants), feeds pending / roster / renewals ----------
+  // ---------- shared data load (profiles + access_grants), feeds pending / roster / renewals / trainers ----------
 
   function loadPendingAndRoster(){
     Promise.all([
-      authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+      authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin,is_trainer,trainer_id&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
       authFetch("/rest/v1/access_grants?select=id,user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
       authFetch("/rest/v1/coupon_codes?select=code,redeemed_by,redeemed_at&redeemed_by=not.is.null&order=redeemed_at.desc").then(function(r){ return r.ok ? r.json() : []; })
     ]).then(function(results){
@@ -385,6 +402,7 @@
         // keep the most-recently-redeemed code per user (list is already sorted desc)
         if (!codeByUser[c.redeemed_by]) codeByUser[c.redeemed_by] = c;
       });
+      renderTrainers(profiles);
       renderRoster(profiles, grantsByUser, codeByUser);
       renderPending(profiles, grantsByUser);
       renderRenewals(profiles, grantsByUser);
@@ -392,6 +410,92 @@
       document.getElementById("rosterTable").querySelector("tbody").innerHTML = "";
     });
   }
+
+  // ---------- trainers ----------
+
+  function renderTrainers(profiles){
+    var trainers = profiles.filter(function(p){ return p.is_trainer; });
+    var tbody = document.querySelector("#trainersTable tbody");
+    tbody.innerHTML = "";
+    document.getElementById("trainersEmpty").classList.toggle("hidden", trainers.length > 0);
+    trainers.forEach(function(t){
+      var count = profiles.filter(function(p){ return p.trainer_id === t.id; }).length;
+      var tr = document.createElement("tr");
+      var tdName = document.createElement("td"); tdName.textContent = t.full_name || "—";
+      var tdEmail = document.createElement("td"); tdEmail.textContent = t.email || "—";
+      var tdCount = document.createElement("td"); tdCount.textContent = String(count);
+      var tdAction = document.createElement("td");
+      var btn = document.createElement("button");
+      btn.className = "mini-btn";
+      btn.textContent = "Remove trainer access";
+      btn.addEventListener("click", function(){
+        if (count > 0 && !confirm("This trainer still has " + count + " student(s) assigned. Remove trainer access anyway? (The students stay assigned to them behind the scenes — reassign them in the Roster first if you want to hand them to someone else.)")) return;
+        btn.disabled = true; btn.textContent = "Removing…";
+        authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(t.id), {
+          method: "PATCH",
+          headers: { "Prefer": "return=minimal" },
+          body: JSON.stringify({ is_trainer: false })
+        }).then(function(res){
+          if (res.ok){ loadPendingAndRoster(); }
+          else { btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Something went wrong."); }
+        }).catch(function(){ btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Network error."); });
+      });
+      tdAction.appendChild(btn);
+      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCount); tr.appendChild(tdAction);
+      tbody.appendChild(tr);
+    });
+
+    var select = document.getElementById("promoteTrainerSelect");
+    var promoteBtn = document.getElementById("promoteTrainerBtn");
+    var eligible = profiles.filter(function(p){ return !p.is_trainer; });
+    select.innerHTML = "";
+    if (!eligible.length){
+      var opt = document.createElement("option");
+      opt.textContent = "No eligible accounts";
+      opt.disabled = true;
+      select.appendChild(opt);
+      promoteBtn.disabled = true;
+    } else {
+      promoteBtn.disabled = false;
+      eligible.forEach(function(p){
+        var o = document.createElement("option");
+        o.value = p.id;
+        var label = p.full_name || p.email || p.id;
+        if (p.email && p.full_name) label += " (" + p.email + ")";
+        if (p.is_admin) label += " — admin";
+        o.textContent = label;
+        select.appendChild(o);
+      });
+    }
+  }
+
+  document.getElementById("promoteTrainerBtn").addEventListener("click", function(){
+    var select = document.getElementById("promoteTrainerSelect");
+    var msg = document.getElementById("trainerMsg");
+    var id = select.value;
+    if (!id) return;
+    var btn = document.getElementById("promoteTrainerBtn");
+    btn.disabled = true; btn.textContent = "Saving…"; msg.textContent = "";
+    authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(id), {
+      method: "PATCH",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify({ is_trainer: true })
+    }).then(function(res){
+      btn.disabled = false; btn.textContent = "Make trainer";
+      if (res.ok){
+        msg.style.color = "var(--ok)";
+        msg.textContent = "Done.";
+        loadPendingAndRoster();
+      } else {
+        msg.style.color = "var(--bad)";
+        msg.textContent = "Something went wrong.";
+      }
+    }).catch(function(){
+      btn.disabled = false; btn.textContent = "Make trainer";
+      msg.style.color = "var(--bad)";
+      msg.textContent = "Network error.";
+    });
+  });
 
   function statusPillHtml(grant){
     var now = new Date();
@@ -408,7 +512,9 @@
   function renderRoster(profiles, grantsByUser, codeByUser){
     var tbody = document.querySelector("#rosterTable tbody");
     tbody.innerHTML = "";
-    profiles.forEach(function(p){
+    var trainers = profiles.filter(function(p){ return p.is_trainer; });
+    var students = profiles.filter(function(p){ return !p.is_admin && !p.is_trainer; });
+    students.forEach(function(p){
       var grant = grantsByUser[p.id];
       var code = codeByUser ? codeByUser[p.id] : null;
       var tr = document.createElement("tr");
@@ -416,10 +522,59 @@
         "<td>" + esc(p.full_name || "—") + "</td>" +
         "<td>" + esc(p.email || "—") + "</td>" +
         "<td>" + esc(p.company || "—") + "</td>" +
-        "<td>" + esc(p.student_type || "—") + "</td>" +
-        "<td>" + (code ? esc(code.code) : "—") + "</td>" +
-        "<td>" + statusPillHtml(grant) + "</td>" +
-        "<td>" + (grant ? esc(fmtDate(grant.expires_at)) : "—") + "</td>";
+        "<td>" + esc(p.student_type || "—") + "</td>";
+
+      var tdTrainer = document.createElement("td");
+      var trainerSelect = document.createElement("select");
+      trainerSelect.style.minWidth = "150px";
+      var noneOpt = document.createElement("option");
+      noneOpt.value = "";
+      noneOpt.textContent = "— unassigned —";
+      trainerSelect.appendChild(noneOpt);
+      trainers.forEach(function(t){
+        var o = document.createElement("option");
+        o.value = t.id;
+        o.textContent = t.full_name || t.email || t.id;
+        if (p.trainer_id === t.id) o.selected = true;
+        trainerSelect.appendChild(o);
+      });
+      if (!p.trainer_id) noneOpt.selected = true;
+      var trainerMsg = document.createElement("div");
+      trainerMsg.className = "row-msg";
+      trainerSelect.addEventListener("change", function(){
+        var val = trainerSelect.value || null;
+        trainerSelect.disabled = true;
+        trainerMsg.textContent = "";
+        authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(p.id), {
+          method: "PATCH",
+          headers: { "Prefer": "return=minimal" },
+          body: JSON.stringify({ trainer_id: val })
+        }).then(function(res){
+          trainerSelect.disabled = false;
+          if (res.ok){
+            p.trainer_id = val;
+            trainerMsg.style.color = "var(--ok)";
+            trainerMsg.textContent = "Saved.";
+            setTimeout(function(){ trainerMsg.textContent = ""; }, 1500);
+          } else {
+            trainerMsg.style.color = "var(--bad)";
+            trainerMsg.textContent = "Couldn't save.";
+          }
+        }).catch(function(){
+          trainerSelect.disabled = false;
+          trainerMsg.style.color = "var(--bad)";
+          trainerMsg.textContent = "Network error.";
+        });
+      });
+      tdTrainer.appendChild(trainerSelect);
+      tdTrainer.appendChild(trainerMsg);
+      tr.appendChild(tdTrainer);
+
+      var tdCode = document.createElement("td"); tdCode.textContent = code ? code.code : "—";
+      var tdAccess = document.createElement("td"); tdAccess.innerHTML = statusPillHtml(grant);
+      var tdExpires = document.createElement("td"); tdExpires.textContent = grant ? fmtDate(grant.expires_at) : "—";
+      tr.appendChild(tdCode); tr.appendChild(tdAccess); tr.appendChild(tdExpires);
+
       var tdAction = document.createElement("td");
       if (grant){
         var btn = document.createElement("button");
@@ -440,9 +595,7 @@
       } else {
         tdAction.textContent = "—";
       }
-      if (!p.is_admin){
-        tdAction.appendChild(buildDeleteControl(p));
-      }
+      tdAction.appendChild(buildDeleteControl(p));
       tr.appendChild(tdAction);
       tbody.appendChild(tr);
     });
@@ -582,7 +735,7 @@
     var tbody = document.querySelector("#pendingTable tbody");
     tbody.innerHTML = "";
     var pending = profiles.filter(function(p){
-      return p.student_type === "corporate_sponsor" && !grantsByUser[p.id];
+      return p.student_type === "corporate_sponsor" && !p.is_admin && !p.is_trainer && !grantsByUser[p.id];
     });
     document.getElementById("pendingEmpty").classList.toggle("hidden", pending.length > 0);
     pending.forEach(function(p){
@@ -663,6 +816,7 @@
       return { profile: profileById[uid], grant: grantsByUser[uid] };
     }).filter(function(row){
       if (!row.profile || !row.grant) return false;
+      if (row.profile.is_admin || row.profile.is_trainer) return false;
       if (row.grant.status !== "active") return false;
       var exp = new Date(row.grant.expires_at);
       return exp > now && exp <= soon;
