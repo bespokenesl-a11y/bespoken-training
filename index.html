@@ -24,6 +24,16 @@
     background:var(--panel2);color:var(--ink);font-size:14.5px;
   }
   input:focus{outline:none;border-color:var(--ice);}
+  .pw-wrap{position:relative;}
+  .pw-wrap input{padding-right:58px;}
+  .pw-toggle{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:var(--ice); font-size:12px; cursor:pointer;
+    font-family:inherit; padding:4px 6px;
+  }
+  .forgot-row{text-align:right; margin-top:8px;}
+  .forgot-row a{color:var(--ice); font-size:12.5px; cursor:pointer; text-decoration:underline;}
+  .inline-box{margin-top:12px; padding:14px; background:var(--panel2); border:1px solid var(--line); border-radius:8px;}
   .type-choice{display:flex;gap:10px;margin-top:6px;}
   .type-choice label{
     flex:1;margin:0;padding:12px;border:1px solid var(--line);border-radius:8px;
@@ -49,16 +59,6 @@
   .access-pill.active{background:rgba(46,125,91,.2);color:#8fe0bb;}
   .access-pill.pending{background:rgba(227,168,87,.2);color:#e3a857;}
   .access-pill.none{background:rgba(154,161,184,.15);color:var(--ink-dim);}
-  .track-list{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
-  .track-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
-  .track-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;}
-  .track-card-head strong{font-size:14.5px;}
-  .track-card-sub{color:var(--ink-dim);font-size:13px;margin:0 0 10px;line-height:1.4;}
-  .track-btn{display:inline-block;background:var(--ice);color:var(--navy);font-weight:700;font-size:13px;padding:8px 14px;border-radius:8px;text-decoration:none;}
-  .track-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;}
-  .track-pill.ready{background:rgba(227,168,87,.2);color:#e3a857;}
-  .track-pill.waiting{background:rgba(154,161,184,.15);color:var(--ink-dim);}
-  .track-pill.done{background:rgba(46,125,91,.2);color:#8fe0bb;}
   .hidden{display:none;}
   .company-field{display:none;}
   .company-field.show{display:block;}
@@ -73,14 +73,17 @@
   <!-- ===== Signed-out: auth card ===== -->
   <div class="card" id="authCard">
     <div id="signupView">
-      <h1>Create your account or sign in</h1>
-      <p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere. New here? Fill in your name and enrollment info, then choose Create account. Already registered? Just enter your email and password, then choose Sign in.</p>
+      <h1>Create your account</h1>
+      <p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere.</p>
       <label for="su-name">Full name</label>
       <input type="text" id="su-name" autocomplete="name">
       <label for="su-email">Email address</label>
       <input type="email" id="su-email" autocomplete="email">
       <label for="su-pw">Password</label>
-      <input type="password" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
+      <div class="pw-wrap">
+        <input type="password" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
+        <button type="button" class="pw-toggle" id="su-pw-toggle">Show</button>
+      </div>
       <label>How are you enrolling?</label>
       <div class="type-choice">
         <label><input type="radio" name="stype" value="private" checked><span>Private Student</span></label>
@@ -88,14 +91,53 @@
       </div>
       <div class="company-field" id="companyField">
         <label for="su-company">Company / sponsor name</label>
-        <input type="text" id="su-company" placeholder="e.g. Your companies name">
+        <input type="text" id="su-company" placeholder="e.g. Boston Consulting Group">
         <div class="field-hint">We'll use this to match you with your sponsor's approval.</div>
       </div>
       <button class="btn" id="signupBtn">Create account</button>
-      <button class="btn btn-ghost" id="loginBtn">Sign in</button>
       <div class="msg" id="signupMsg"></div>
-      <div class="msg" id="loginMsg"></div>
+      <div class="switch">Already have an account? <a id="toLogin">Sign in</a></div>
     </div>
+
+    <div class="hidden" id="loginView">
+      <h1>Sign in</h1>
+      <p class="sub">Use the same email and password you created for your assessment.</p>
+      <label for="li-email">Email address</label>
+      <input type="email" id="li-email" autocomplete="email">
+      <label for="li-pw">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="li-pw" autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="li-pw-toggle">Show</button>
+      </div>
+      <div class="forgot-row"><a id="forgotLink">Forgot password?</a></div>
+      <div class="inline-box hidden" id="forgotBox">
+        <label for="forgot-email" style="margin-top:0;">Email address</label>
+        <input type="email" id="forgot-email">
+        <button class="btn" id="forgotSendBtn" style="margin-top:12px;">Send reset link</button>
+        <div class="msg" id="forgotMsg"></div>
+      </div>
+      <button class="btn" id="loginBtn">Sign in</button>
+      <div class="msg" id="loginMsg"></div>
+      <div class="switch">Need an account? <a id="toSignup">Create one</a></div>
+    </div>
+  </div>
+
+  <!-- ===== Password recovery ===== -->
+  <div class="card hidden" id="recoveryCard">
+    <h1>Set a new password</h1>
+    <p class="sub">Choose a new password for your account. You'll be signed in automatically once it's saved.</p>
+    <label for="rec-pw">New password</label>
+    <div class="pw-wrap">
+      <input type="password" id="rec-pw" autocomplete="new-password" placeholder="At least 8 characters">
+      <button type="button" class="pw-toggle" id="rec-pw-toggle">Show</button>
+    </div>
+    <label for="rec-pw2">Confirm new password</label>
+    <div class="pw-wrap">
+      <input type="password" id="rec-pw2" autocomplete="new-password">
+      <button type="button" class="pw-toggle" id="rec-pw2-toggle">Show</button>
+    </div>
+    <button class="btn" id="recoverySaveBtn">Save new password</button>
+    <div class="msg" id="recoveryMsg"></div>
   </div>
 
   <!-- ===== Signed-in: dashboard ===== -->
@@ -104,29 +146,15 @@
       <div>Signed in as <strong id="whoami"></strong></div>
       <span class="signout" id="signoutBtn">Sign out</span>
     </div>
+    <h1>Your training access</h1>
+    <p class="sub" id="accessSummary">Checking your access status&hellip;</p>
 
-    <div id="assessmentReturnBlock" class="hidden">
-      <h1>You’re all set</h1>
-      <p class="sub">Diagnostic testing is free on every track &mdash; no access code needed. Just continue to your assessment.</p>
+    <div id="redeemBlock">
+      <label for="couponInput">Have a code from your instructor?</label>
+      <input type="text" id="couponInput" placeholder="Enter your access code">
+      <button class="btn" id="redeemBtn">Redeem code</button>
+      <div class="msg" id="redeemMsg"></div>
     </div>
-
-    <div id="trainingAccessBlock">
-      <h1>Your training access</h1>
-      <p class="sub" id="accessSummary">Checking your access status&hellip;</p>
-
-      <div id="redeemBlock">
-        <label for="couponInput">Have a code from your instructor?</label>
-        <input type="text" id="couponInput" placeholder="Enter your access code">
-        <button class="btn" id="redeemBtn">Redeem code</button>
-        <div class="msg" id="redeemMsg"></div>
-      </div>
-    </div>
-
-    <div id="trainingTracksBlock" class="hidden">
-    <h1>Your Training</h1>
-    <p class="sub">Pick a track below to jump back in.</p>
-    <div id="trackList" class="track-list"></div>
-  </div>
   </div>
 </div>
 
@@ -143,7 +171,6 @@
 
   var qs = new URLSearchParams(location.search);
   var returnTo = qs.get('return_to');
-  var purpose = qs.get('purpose');
 
   function saveSession(s){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
@@ -197,11 +224,73 @@
     el.className = 'msg ' + (isError ? 'error' : 'ok');
   }
 
+  // ---- show/hide password toggles ----
+  function wireToggle(toggleId, inputId){
+    var btn = document.getElementById(toggleId);
+    var input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    btn.addEventListener('click', function(){
+      var showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? 'Show' : 'Hide';
+    });
+  }
+  wireToggle('su-pw-toggle', 'su-pw');
+  wireToggle('li-pw-toggle', 'li-pw');
+  wireToggle('rec-pw-toggle', 'rec-pw');
+  wireToggle('rec-pw2-toggle', 'rec-pw2');
+
+  // ---- signup / login view toggle ----
+  document.getElementById('toLogin').onclick = function(){
+    document.getElementById('signupView').classList.add('hidden');
+    document.getElementById('loginView').classList.remove('hidden');
+  };
+  document.getElementById('toSignup').onclick = function(){
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('signupView').classList.remove('hidden');
+  };
   Array.prototype.forEach.call(document.querySelectorAll('input[name=stype]'), function(r){
     r.onchange = function(){
       document.getElementById('companyField').classList.toggle('show', r.value === 'corporate_sponsor' && r.checked);
     };
   });
+
+  // ---- forgot password ----
+  document.getElementById('forgotLink').onclick = function(){
+    var box = document.getElementById('forgotBox');
+    box.classList.toggle('hidden');
+    if (!box.classList.contains('hidden')){
+      var emailField = document.getElementById('forgot-email');
+      if (!emailField.value){
+        emailField.value = document.getElementById('li-email').value.trim();
+      }
+    }
+  };
+  document.getElementById('forgotSendBtn').onclick = async function(){
+    var btn = this;
+    var email = document.getElementById('forgot-email').value.trim();
+    var msgEl = document.getElementById('forgotMsg');
+    if(!email){ showMsg(msgEl, 'Enter your email first.', true); return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try{
+      var redirectTo = location.origin + location.pathname;
+      var res = await fetch(SUPABASE_URL + '/auth/v1/recover?redirect_to=' + encodeURIComponent(redirectTo), {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      // Supabase returns 200 here regardless of whether the email is registered,
+      // by design, so the response can't be used to confirm which emails exist.
+      if(res.ok){
+        showMsg(msgEl, 'If that email has an account, a reset link is on its way — check your inbox.', false);
+      } else {
+        showMsg(msgEl, 'Something went wrong sending that. Please try again.', true);
+      }
+    }catch(e){
+      showMsg(msgEl, 'Something went wrong reaching the server.', true);
+    }
+    btn.disabled = false; btn.textContent = 'Send reset link';
+  };
 
   // ---- sign up ----
   document.getElementById('signupBtn').onclick = async function(){
@@ -251,19 +340,7 @@
         await applyPendingProfile();
         enterDashboard();
       } else {
-        msgEl.className = 'msg ok';
-        msgEl.textContent = '';
-        msgEl.appendChild(document.createTextNode('Almost there — check ' + email + ' for a confirmation link, then come back and use the Sign in button below. Already used this email before? No new email is sent for an existing account — '));
-        var alreadyLink = document.createElement('a');
-        alreadyLink.textContent = 'sign in below';
-        alreadyLink.style.color = 'var(--ice)';
-        alreadyLink.style.cursor = 'pointer';
-        alreadyLink.style.textDecoration = 'underline';
-        alreadyLink.onclick = function(){
-        document.getElementById('su-pw').focus();
-      };
-      msgEl.appendChild(alreadyLink);
-        msgEl.appendChild(document.createTextNode('.'));
+        showMsg(msgEl, 'Almost there — check ' + email + ' for a confirmation link, then come back and sign in.', false);
         btn.disabled = false; btn.textContent = 'Create account';
       }
     }catch(e){
@@ -275,8 +352,8 @@
   // ---- log in ----
   document.getElementById('loginBtn').onclick = async function(){
     var btn = this;
-    var email = document.getElementById('su-email').value.trim();
-    var pw = document.getElementById('su-pw').value;
+    var email = document.getElementById('li-email').value.trim();
+    var pw = document.getElementById('li-pw').value;
     var msgEl = document.getElementById('loginMsg');
     if(!email || !pw){ showMsg(msgEl, 'Enter your email and password.', true); return; }
 
@@ -375,93 +452,19 @@
     }
   }
 
-  async function loadTrainingTracks(){
-    var session = loadSession();
-    if(!session || !session.user) return;
-    var block = document.getElementById('trainingTracksBlock');
-    var listEl = document.getElementById('trackList');
-    listEl.innerHTML = '';
-    try{
-      var card = await buildVocabTrackCard(session);
-      if(card){ listEl.appendChild(card); }
-    }catch(e){ /* silent — rest of dashboard still works */ }
-    if(listEl.children.length){ block.classList.remove('hidden'); }
-  }
-
-  async function buildVocabTrackCard(session){
-    var hasRes = await authFetch('/rest/v1/placement_results?user_id=eq.' + session.user.id + '&test_type=eq.pre&select=id&limit=1');
-    var hasRows = hasRes.ok ? await hasRes.json() : [];
-    if(!hasRows.length) return null;
-
-    var groupRes = await authFetch('/rest/v1/vocab_training_groups?user_id=eq.' + session.user.id + '&select=round_number,words,status&order=round_number.desc&limit=1');
-    var groupRows = groupRes.ok ? await groupRes.json() : [];
-    var group = groupRows[0];
-
-    var pillClass = 'waiting', pillText = 'Preparing';
-    var sub = "You've completed your placement test \u2014 we're building your personalized training now. Check back soon.";
-    var link = null;
-
-    if(group && group.status !== 'completed'){
-      var n = (group.words || []).length;
-      pillClass = 'ready'; pillText = 'Ready';
-      sub = 'Round ' + group.round_number + ' is ready for your check-in \u2014 ' + n + ' word' + (n === 1 ? '' : 's') + '.';
-      link = 'https://ephemeral-cranachan-fb33bc.netlify.app/retest.html#bt_access_token=' + encodeURIComponent(session.access_token) + '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
-    } else if(group && group.status === 'completed'){
-      pillClass = 'done'; pillText = 'Complete';
-      sub = "You've completed your assigned vocabulary training. Nice work!";
-    }
-
-    var card = document.createElement('div');
-    card.className = 'track-card';
-    var head = document.createElement('div');
-    head.className = 'track-card-head';
-    var strong = document.createElement('strong');
-    strong.textContent = 'Vocabulary Building';
-    var pill = document.createElement('span');
-    pill.className = 'track-pill ' + pillClass;
-    pill.textContent = pillText;
-    head.appendChild(strong); head.appendChild(pill);
-    var subEl = document.createElement('p');
-    subEl.className = 'track-card-sub';
-    subEl.textContent = sub;
-    card.appendChild(head); card.appendChild(subEl);
-    if(link){
-      var a = document.createElement('a');
-      a.className = 'track-btn';
-      a.href = link; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = 'Continue training \u2192';
-      card.appendChild(a);
-    }
-    return card;
-  }
-
   function enterDashboard(){
     var session = loadSession();
     document.getElementById('authCard').classList.add('hidden');
+    document.getElementById('recoveryCard').classList.add('hidden');
     document.getElementById('dashCard').classList.remove('hidden');
     document.getElementById('whoami').textContent = (session.user && session.user.email) || '';
+    refreshAccessSummary();
 
-    // Diagnostic testing is free on every track, so the training-access /
-    // redeem-code UI has no business showing up when someone is just here
-    // to get bounced back to a free diagnostic assessment. That UI only
-    // matters once someone is actually starting training (Grammar not yet
-    // set up, Vocabulary, Language Clarity), which is signaled either by a
-    // direct visit to this app (no return_to) or by return_to carrying
-    // purpose=training (the Training tab on the main site sends people
-    // here with that flag).
-    if(returnTo && purpose !== 'training'){
-      document.getElementById('trainingAccessBlock').classList.add('hidden');
-      document.getElementById('assessmentReturnBlock').classList.remove('hidden');
-    } else {
-      refreshAccessSummary();
-      loadTrainingTracks();
-    }
-
+    // Hand off to whatever assessment sent us here, now that we have a
+    // session. Tokens travel in the URL fragment (never sent to the server
+    // in a Referer header the way query params can be) and the receiving
+    // app is expected to read + immediately strip them from the address bar.
     if(returnTo){
-      // Hand off to whatever sent us here, now that we have a session.
-      // Tokens travel in the URL fragment (never sent to the server in a
-      // Referer header the way query params can be) and the receiving app
-      // is expected to read + immediately strip them from the address bar.
       var url = new URL(returnTo);
       url.hash = 'bt_access_token=' + encodeURIComponent(session.access_token) +
                  '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
@@ -474,14 +477,76 @@
     }
   }
 
-  // ---- boot ----
-  (async function init(){
-    var session = await refreshIfNeeded();
-    if(session){
+  // ---- password recovery (from the "reset password" email link) ----
+  function parseRecoveryHash(){
+    var hash = location.hash || '';
+    if (hash.indexOf('type=recovery') === -1) return null;
+    var params = new URLSearchParams(hash.replace(/^#/, ''));
+    var at = params.get('access_token');
+    if (!at) return null;
+    return {
+      access_token: at,
+      refresh_token: params.get('refresh_token'),
+      expires_in: parseInt(params.get('expires_in'), 10) || 3600
+    };
+  }
+
+  var recoveryTokens = parseRecoveryHash();
+
+  document.getElementById('recoverySaveBtn').onclick = async function(){
+    var btn = this;
+    var pw1 = document.getElementById('rec-pw').value;
+    var pw2 = document.getElementById('rec-pw2').value;
+    var msgEl = document.getElementById('recoveryMsg');
+    if (pw1.length < 8){ showMsg(msgEl, 'Password must be at least 8 characters.', true); return; }
+    if (pw1 !== pw2){ showMsg(msgEl, "Passwords don't match.", true); return; }
+
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try{
+      var res = await fetch(SUPABASE_URL + '/auth/v1/user', {
+        method: 'PUT',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + recoveryTokens.access_token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: pw1 })
+      });
+      var data = await res.json();
+      if(!res.ok){
+        showMsg(msgEl, data.msg || data.error_description || 'Could not update your password. The reset link may have expired — request a new one.', true);
+        btn.disabled = false; btn.textContent = 'Save new password';
+        return;
+      }
+      saveSession({
+        access_token: recoveryTokens.access_token,
+        refresh_token: recoveryTokens.refresh_token,
+        expires_in: recoveryTokens.expires_in,
+        issued_at: Date.now(),
+        user: data
+      });
       await applyPendingProfile();
       enterDashboard();
+    }catch(e){
+      showMsg(msgEl, 'Something went wrong reaching the server.', true);
+      btn.disabled = false; btn.textContent = 'Save new password';
     }
-  })();
+  };
+
+  // ---- boot ----
+  if (recoveryTokens){
+    history.replaceState(null, '', location.pathname + location.search);
+    document.getElementById('authCard').classList.add('hidden');
+    document.getElementById('recoveryCard').classList.remove('hidden');
+  } else {
+    (async function init(){
+      var session = await refreshIfNeeded();
+      if(session){
+        await applyPendingProfile();
+        enterDashboard();
+      }
+    })();
+  }
 })();
 </script>
 </body>

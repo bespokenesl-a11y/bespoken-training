@@ -43,6 +43,16 @@
     background:#0f1440; color:var(--white); font-size:14.5px; font-family:inherit;
   }
   input:focus{outline:none; border-color:var(--ice);}
+  .pw-wrap{position:relative;}
+  .pw-wrap input{padding-right:58px;}
+  .pw-toggle{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:var(--ice); font-size:12px; cursor:pointer;
+    font-family:inherit; padding:4px 6px;
+  }
+  .forgot-row{text-align:right; margin-top:8px;}
+  .forgot-row a{color:var(--ice); font-size:12.5px; cursor:pointer; text-decoration:underline;}
+  .inline-box{margin-top:12px; padding:14px; background:#0f1440; border:1px solid var(--line); border-radius:8px;}
   .btn{
     margin-top:22px; width:100%; padding:13px; border:none; border-radius:9px;
     background:var(--ice); color:var(--navy); font-weight:700; font-size:15px; cursor:pointer;
@@ -70,10 +80,37 @@
       <label for="li-email">Email address</label>
       <input type="email" id="li-email" autocomplete="email">
       <label for="li-pw">Password</label>
-      <input type="password" id="li-pw" autocomplete="current-password">
+      <div class="pw-wrap">
+        <input type="password" id="li-pw" autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="li-pw-toggle">Show</button>
+      </div>
+      <div class="forgot-row"><a id="forgotLink">Forgot password?</a></div>
+      <div class="inline-box hidden" id="forgotBox">
+        <label for="forgot-email" style="margin-top:0;">Email address</label>
+        <input type="email" id="forgot-email">
+        <button class="btn" id="forgotSendBtn" style="margin-top:12px;">Send reset link</button>
+        <div class="msg" id="forgotMsg"></div>
+      </div>
       <button class="btn" id="loginBtn">Sign in</button>
       <div class="msg" id="loginMsg"></div>
     </div>
+  </div>
+
+  <div class="card hidden" id="recoveryCard" style="margin-top:24px;">
+    <h1 style="font-size:20px;">Set a new password</h1>
+    <p class="sub">Choose a new password for your staff account. You'll be signed in automatically once it's saved.</p>
+    <label for="rec-pw">New password</label>
+    <div class="pw-wrap">
+      <input type="password" id="rec-pw" autocomplete="new-password" placeholder="At least 8 characters">
+      <button type="button" class="pw-toggle" id="rec-pw-toggle">Show</button>
+    </div>
+    <label for="rec-pw2">Confirm new password</label>
+    <div class="pw-wrap">
+      <input type="password" id="rec-pw2" autocomplete="new-password">
+      <button type="button" class="pw-toggle" id="rec-pw2-toggle">Show</button>
+    </div>
+    <button class="btn" id="recoverySaveBtn">Save new password</button>
+    <div class="msg" id="recoveryMsg"></div>
   </div>
 
   <div class="switch">Not staff? <a href="index.html">Go to the student sign-in</a></div>
@@ -117,6 +154,21 @@
     document.getElementById("formView").classList.toggle("hidden", on);
   }
 
+  // ---- show/hide password toggles ----
+  function wireToggle(toggleId, inputId){
+    var btn = document.getElementById(toggleId);
+    var input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    btn.addEventListener("click", function(){
+      var showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      btn.textContent = showing ? "Show" : "Hide";
+    });
+  }
+  wireToggle("li-pw-toggle", "li-pw");
+  wireToggle("rec-pw-toggle", "rec-pw");
+  wireToggle("rec-pw2-toggle", "rec-pw2");
+
   function routeByRole(profile){
     if (profile && profile.is_admin){
       location.href = "admin.html";
@@ -124,6 +176,8 @@
       location.href = "trainer.html";
     } else {
       showChecking(false);
+      document.getElementById("recoveryCard").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
       var msgEl = document.getElementById("loginMsg");
       showMsg(msgEl, "This account doesn't have staff access. If you're a student, use the student sign-in link below.", true);
       var btn = document.getElementById("loginBtn");
@@ -190,7 +244,115 @@
     });
   });
 
-  checkExistingSession();
+  // ---- forgot password ----
+  document.getElementById("forgotLink").addEventListener("click", function(){
+    var box = document.getElementById("forgotBox");
+    box.classList.toggle("hidden");
+    if (!box.classList.contains("hidden")){
+      var emailField = document.getElementById("forgot-email");
+      if (!emailField.value){
+        emailField.value = document.getElementById("li-email").value.trim();
+      }
+    }
+  });
+  document.getElementById("forgotSendBtn").addEventListener("click", function(){
+    var btn = this;
+    var email = document.getElementById("forgot-email").value.trim();
+    var msgEl = document.getElementById("forgotMsg");
+    if (!email){ showMsg(msgEl, "Enter your email first.", true); return; }
+    btn.disabled = true; btn.textContent = "Sending…";
+    var redirectTo = location.origin + location.pathname;
+    fetch(SUPABASE_URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(redirectTo), {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    }).then(function(res){
+      // Supabase returns 200 here regardless of whether the email is registered,
+      // by design, so the response can't be used to confirm which emails exist.
+      if (res.ok){
+        showMsg(msgEl, "If that email has a staff account, a reset link is on its way — check your inbox.", false);
+      } else {
+        showMsg(msgEl, "Something went wrong sending that. Please try again.", true);
+      }
+      btn.disabled = false; btn.textContent = "Send reset link";
+    }).catch(function(){
+      showMsg(msgEl, "Something went wrong reaching the server.", true);
+      btn.disabled = false; btn.textContent = "Send reset link";
+    });
+  });
+
+  // ---- password recovery (from the "reset password" email link) ----
+  function parseRecoveryHash(){
+    var hash = location.hash || "";
+    if (hash.indexOf("type=recovery") === -1) return null;
+    var params = new URLSearchParams(hash.replace(/^#/, ""));
+    var at = params.get("access_token");
+    if (!at) return null;
+    return {
+      access_token: at,
+      refresh_token: params.get("refresh_token"),
+      expires_in: parseInt(params.get("expires_in"), 10) || 3600
+    };
+  }
+
+  var recoveryTokens = parseRecoveryHash();
+
+  document.getElementById("recoverySaveBtn").addEventListener("click", function(){
+    var btn = this;
+    var pw1 = document.getElementById("rec-pw").value;
+    var pw2 = document.getElementById("rec-pw2").value;
+    var msgEl = document.getElementById("recoveryMsg");
+    if (pw1.length < 8){ showMsg(msgEl, "Password must be at least 8 characters.", true); return; }
+    if (pw1 !== pw2){ showMsg(msgEl, "Passwords don't match.", true); return; }
+
+    btn.disabled = true; btn.textContent = "Saving…";
+    fetch(SUPABASE_URL + "/auth/v1/user", {
+      method: "PUT",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + recoveryTokens.access_token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ password: pw1 })
+    }).then(function(res){
+      return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+    }).then(function(result){
+      if (!result.ok){
+        showMsg(msgEl, result.data.msg || result.data.error_description || "Could not update your password. The reset link may have expired — request a new one.", true);
+        btn.disabled = false; btn.textContent = "Save new password";
+        return;
+      }
+      saveSession({
+        access_token: recoveryTokens.access_token,
+        refresh_token: recoveryTokens.refresh_token,
+        expires_in: recoveryTokens.expires_in,
+        issued_at: Date.now(),
+        user: result.data
+      });
+      document.getElementById("recoveryCard").classList.add("hidden");
+      showChecking(true);
+      authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(result.data.id) + "&select=is_admin,is_trainer")
+        .then(function(r){ return r.json(); })
+        .then(function(rows){ routeByRole(rows[0]); });
+    }).catch(function(){
+      showMsg(msgEl, "Something went wrong reaching the server.", true);
+      btn.disabled = false; btn.textContent = "Save new password";
+    });
+  });
+
+  document.getElementById("signoutBtn") && document.getElementById("signoutBtn").addEventListener("click", function(){
+    clearSession();
+    location.reload();
+  });
+
+  // ---- boot ----
+  if (recoveryTokens){
+    history.replaceState(null, "", location.pathname + location.search);
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("recoveryCard").classList.remove("hidden");
+  } else {
+    checkExistingSession();
+  }
 })();
 </script>
 </body>
