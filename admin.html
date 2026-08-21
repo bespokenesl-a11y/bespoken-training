@@ -6,1230 +6,1294 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <style>
-  :root{
-    --navy:#1E2761;
-    --navy2:#141b4d;
-    --ice:#CADCFC;
-    --white:#FFFFFF;
-    --gray:#9aa1b8;
-    --line:#2c3568;
-    --ok:#6fbf73;
-    --warn:#e3a857;
-    --bad:#e2637a;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:var(--navy2);
-    color:var(--white);
-    min-height:100vh;
-    padding:32px 24px 80px;
-  }
-  h1{font-family:Cambria,'Times New Roman',serif; margin:0 0 4px;}
-  .sub{color:var(--gray); margin:0 0 28px;}
-  .wrap{max-width:960px; margin:0 auto;}
-  #gate, #denied{text-align:center; padding:80px 20px; color:var(--ice);}
-  #denied a{color:var(--ice);}
-  .hidden{display:none !important;}
-  .panel{
-    background:var(--navy);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:22px 24px;
-    margin-bottom:24px;
-  }
-  .panel h2{margin:0 0 4px; font-size:19px;}
-  .panel .desc{color:var(--gray); font-size:13px; margin:0 0 16px;}
-  table{width:100%; border-collapse:collapse; font-size:14px;}
-  th{text-align:left; color:var(--gray); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; padding:6px 10px; border-bottom:1px solid var(--line);}
-  td{padding:10px; border-bottom:1px solid var(--line); vertical-align:middle;}
-  tr:last-child td{border-bottom:none;}
-  .empty{color:var(--gray); font-size:14px; padding:8px 2px;}
-  .pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;}
-  .pill.active{background:#1c3a24; color:var(--ok);}
-  .pill.pending{background:#3a3218; color:var(--warn);}
-  .pill.none{background:#3a1c26; color:var(--bad);}
-  .pill.expired{background:#3a1c26; color:var(--bad);}
-  select, input[type=text], input[type=number], input[type=email], textarea{
-    background:#0f1440; color:var(--white); border:1px solid var(--line);
-    border-radius:6px; padding:8px 10px; font-size:14px; font-family:inherit;
-  }
-  .btn{
-    background:var(--ice); color:var(--navy); border:none; border-radius:8px;
-    padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer;
-  }
-  .btn:hover{filter:brightness(1.05);}
-  .btn.secondary{background:transparent; color:var(--ice); border:1px solid var(--ice);}
-  .btn:disabled{opacity:.5; cursor:not-allowed;}
-  .row-msg{font-size:12px; margin-top:4px;}
-  .form-grid{display:flex; flex-wrap:wrap; gap:12px; align-items:end;}
-  .field{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--gray);}
-  .code-result{
-    margin-top:16px; padding:16px; background:#0f1440; border-radius:8px;
-    border:1px dashed var(--ice); display:none;
-  }
-  .code-result .code{font-size:22px; font-weight:800; letter-spacing:.06em; color:var(--ice);}
-  .top-row{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px;}
-  .signout{color:var(--gray); font-size:13px; cursor:pointer; text-decoration:underline;}
-  .tip{color:var(--gray); font-size:12px; margin-top:10px;}
-  .word-chip{display:inline-flex; align-items:center; gap:5px; background:#0f1440; border:1px solid var(--line); border-radius:999px; padding:4px 10px 4px 6px; font-size:12px; margin:3px 4px 3px 0;}
-  .word-chip input{margin:0;}
-  .word-pool{max-height:220px; overflow-y:auto; padding:6px 2px; border:1px solid var(--line); border-radius:8px; margin:6px 0;}
-  .group-card{background:#0f1440; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:10px;}
-  .group-card .gc-top{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
-  .badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;}
-  .badge.pass{background:#1c3a24; color:var(--ok);}
-  .badge.fail{background:#3a1c26; color:var(--bad);}
-  .badge.training{background:#3a3218; color:var(--warn);}
-  .student-block{border-bottom:1px solid var(--line); padding:16px 0;}
-  .student-block:last-child{border-bottom:none;}
-  .student-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px;}
-  .student-head .sname{font-weight:700;}
-  .student-head .smeta{color:var(--gray); font-size:12px;}
-  .mini-btn{background:transparent; color:var(--ice); border:1px solid var(--ice); border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
-  .mini-btn:disabled{opacity:.5; cursor:not-allowed;}
-  .stat-line{font-size:13px; color:var(--ice); margin:4px 0;}
-  .soon-note{background:#0f1440; border:1px dashed var(--line); border-radius:8px; padding:12px 14px; color:var(--gray); font-size:13px;}
+:root{
+--navy:#1E2761;
+--navy2:#141b4d;
+--ice:#CADCFC;
+--white:#FFFFFF;
+--gray:#9aa1b8;
+--line:#2c3568;
+--ok:#6fbf73;
+--warn:#e3a857;
+--bad:#e2637a;
+}
+*{box-sizing:border-box;}
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+background:var(--navy2);
+color:var(--white);
+min-height:100vh;
+padding:32px 24px 80px;
+}
+h1{font-family:Cambria,'Times New Roman',serif; margin:0 0 4px;}
+.sub{color:var(--gray); margin:0 0 28px;}
+.wrap{max-width:960px; margin:0 auto;}
+#gate, #denied{text-align:center; padding:80px 20px; color:var(--ice);}
+#denied a{color:var(--ice);}
+.hidden{display:none !important;}
+.panel{
+background:var(--navy);
+border:1px solid var(--line);
+border-radius:12px;
+padding:22px 24px;
+margin-bottom:24px;
+}
+.panel h2{margin:0 0 4px; font-size:19px;}
+.panel .desc{color:var(--gray); font-size:13px; margin:0 0 16px;}
+table{width:100%; border-collapse:collapse; font-size:14px;}
+th{text-align:left; color:var(--gray); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; padding:6px 10px; border-bottom:1px solid var(--line);}
+td{padding:10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.empty{color:var(--gray); font-size:14px; padding:8px 2px;}
+.pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+.pill.active{background:#1c3a24; color:var(--ok);}
+.pill.pending{background:#3a3218; color:var(--warn);}
+.pill.none{background:#3a1c26; color:var(--bad);}
+.pill.expired{background:#3a1c26; color:var(--bad);}
+select, input[type=text], input[type=number], input[type=email], textarea{
+background:#0f1440; color:var(--white); border:1px solid var(--line);
+border-radius:6px; padding:8px 10px; font-size:14px; font-family:inherit;
+}
+.btn{
+background:var(--ice); color:var(--navy); border:none; border-radius:8px;
+padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer;
+}
+.btn:hover{filter:brightness(1.05);}
+.btn.secondary{background:transparent; color:var(--ice); border:1px solid var(--ice);}
+.btn:disabled{opacity:.5; cursor:not-allowed;}
+.row-msg{font-size:12px; margin-top:4px;}
+.form-grid{display:flex; flex-wrap:wrap; gap:12px; align-items:end;}
+.field{display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--gray);}
+.code-result{
+margin-top:16px; padding:16px; background:#0f1440; border-radius:8px;
+border:1px dashed var(--ice); display:none;
+}
+.code-result .code{font-size:22px; font-weight:800; letter-spacing:.06em; color:var(--ice);}
+.top-row{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px;}
+.signout{color:var(--gray); font-size:13px; cursor:pointer; text-decoration:underline;}
+.tip{color:var(--gray); font-size:12px; margin-top:10px;}
+.word-chip{display:inline-flex; align-items:center; gap:5px; background:#0f1440; border:1px solid var(--line); border-radius:999px; padding:4px 10px 4px 6px; font-size:12px; margin:3px 4px 3px 0;}
+.word-chip input{margin:0;}
+.word-pool{max-height:220px; overflow-y:auto; padding:6px 2px; border:1px solid var(--line); border-radius:8px; margin:6px 0;}
+.group-card{background:#0f1440; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:10px;}
+.group-card .gc-top{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+.badge{display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;}
+.badge.pass{background:#1c3a24; color:var(--ok);}
+.badge.fail{background:#3a1c26; color:var(--bad);}
+.badge.training{background:#3a3218; color:var(--warn);}
+.student-block{border-bottom:1px solid var(--line); padding:16px 0;}
+.student-block:last-child{border-bottom:none;}
+.student-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px;}
+.student-head .sname{font-weight:700;}
+.student-head .smeta{color:var(--gray); font-size:12px;}
+.mini-btn{background:transparent; color:var(--ice); border:1px solid var(--ice); border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer;}
+.mini-btn:disabled{opacity:.5; cursor:not-allowed;}
+.stat-line{font-size:13px; color:var(--ice); margin:4px 0;}
+.soon-note{background:#0f1440; border:1px dashed var(--line); border-radius:8px; padding:12px 14px; color:var(--gray); font-size:13px;}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="gate">Checking access…</div>
-    <div id="denied" class="hidden">
-      <h1>Not authorized</h1>
-      <p>This page is for Bespoken English staff only.</p>
-      <p><a href="index.html">Back to sign in</a></p>
-    </div>
+<div class="wrap">
+<div id="gate">Checking access…</div>
+<div id="denied" class="hidden">
+<h1>Not authorized</h1>
+<p>This page is for Bespoken English staff only.</p>
+<p><a href="index.html">Back to sign in</a></p>
+</div>
 
-    <div id="app" class="hidden">
-      <div class="top-row">
-        <div>
-          <h1>Admin</h1>
-          <p class="sub">Bespoken English — staff dashboard</p>
-        </div>
-        <div>
-          <span id="whoami" style="color:var(--gray); font-size:13px;"></span>
-          &nbsp;·&nbsp;<span class="signout" id="signoutBtn">Sign out</span>
-        </div>
-      </div>
+<div id="app" class="hidden">
+<div class="top-row">
+<div>
+<h1>Admin</h1>
+<p class="sub">Bespoken English — staff dashboard</p>
+</div>
+<div>
+<span id="whoami" style="color:var(--gray); font-size:13px;"></span>
+&nbsp;·&nbsp;<span class="signout" id="signoutBtn">Sign out</span>
+</div>
+</div>
 
-      <div class="panel" id="subPanel">
-        <h2>Subscription requests</h2>
-        <p class="desc">Students who finished a placement test and clicked "Ready to begin training?" Send them a PayPal invoice for their first month, then mark it invoiced.</p>
-        <table id="subTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Track</th><th>Requested</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="empty hidden" id="subEmpty">No pending subscription requests right now.</div>
-      </div>
+<div class="panel" id="subPanel">
+<h2>Subscription requests</h2>
+<p class="desc">Students who finished a placement test and clicked "Ready to begin training?" Send them a PayPal invoice for their first month, then mark it invoiced.</p>
+<table id="subTable">
+<thead><tr><th>Name</th><th>Email</th><th>Track</th><th>Requested</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty hidden" id="subEmpty">No pending subscription requests right now.</div>
+</div>
 
-      <div class="panel" id="pendingPanel">
-        <h2>Pending approvals</h2>
-        <p class="desc">Students who signed up as corporate-sponsored but don't have access yet. Approving grants access directly — no code needed.</p>
-        <table id="pendingTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Signed up</th><th>Grant length</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="empty hidden" id="pendingEmpty">No one is waiting on approval right now.</div>
-      </div>
+<div class="panel" id="clarityPanel">
+<h2>Language Clarity — submitted recordings</h2>
+<p class="desc">Phonetic assessment recordings students have submitted. Get a temporary link to play or download each one, then reach out with their curriculum.</p>
+<table id="clarityTable">
+<thead><tr><th>Name</th><th>Email</th><th>Date</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty hidden" id="clarityEmpty">No recordings submitted yet.</div>
+</div>
 
-      <div class="panel" id="couponPanel">
-        <h2>Generate a coupon code</h2>
-        <p class="desc">Creates a code and shows it here. Nothing is emailed automatically — copy it and send it yourself.</p>
-        <div class="form-grid">
-          <div class="field">Student type
-            <select id="couponType">
-              <option value="private">Private</option>
-              <option value="corporate_sponsor">Corporate sponsor</option>
-            </select>
-          </div>
-          <div class="field">Grants months
-            <input type="number" id="couponMonths" value="1" min="1" style="width:80px;">
-          </div>
-          <div class="field">Issued to (optional email)
-            <input type="email" id="couponEmail" placeholder="student@example.com" style="width:200px;">
-          </div>
-          <div class="field">Note (optional)
-            <input type="text" id="couponNote" placeholder="e.g. referral, promo" style="width:220px;">
-          </div>
-          <button class="btn" id="couponGenBtn">Generate code</button>
-        </div>
-        <div class="row-msg" id="couponMsg"></div>
-        <div class="code-result" id="couponResult">
-          <div style="color:var(--gray); font-size:12px; margin-bottom:4px;">New code</div>
-          <div class="code" id="couponCodeText"></div>
-          <button class="btn secondary" id="couponCopyBtn" style="margin-top:10px;">Copy</button>
-        </div>
-      </div>
+<div class="panel" id="pendingPanel">
+<h2>Pending approvals</h2>
+<p class="desc">Students who signed up as corporate-sponsored but don't have access yet. Approving grants access directly — no code needed.</p>
+<table id="pendingTable">
+<thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Signed up</th><th>Grant length</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty hidden" id="pendingEmpty">No one is waiting on approval right now.</div>
+</div>
 
-      <div class="panel" id="trainersPanel">
-        <h2>Trainers</h2>
-        <p class="desc">Staff with their own login who can view and log notes for their assigned students only. Promote an existing account to trainer, then assign students to them in the Roster below. Removing trainer access doesn't delete their login — it just takes away the trainer dashboard.</p>
-        <div class="form-grid">
-          <div class="field">Promote to trainer
-            <select id="promoteTrainerSelect" style="width:240px;"></select>
-          </div>
-          <button class="btn" id="promoteTrainerBtn">Make trainer</button>
-        </div>
-        <div class="row-msg" id="trainerMsg"></div>
-        <table id="trainersTable" style="margin-top:16px;">
-          <thead><tr><th>Name</th><th>Email</th><th>Students assigned</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="empty hidden" id="trainersEmpty">No trainers yet.</div>
-      </div>
+<div class="panel" id="couponPanel">
+<h2>Generate a coupon code</h2>
+<p class="desc">Creates a code and shows it here. Nothing is emailed automatically — copy it and send it yourself.</p>
+<div class="form-grid">
+<div class="field">Student type
+<select id="couponType">
+<option value="private">Private</option>
+<option value="corporate_sponsor">Corporate sponsor</option>
+</select>
+</div>
+<div class="field">Grants months
+<input type="number" id="couponMonths" value="1" min="1" style="width:80px;">
+</div>
+<div class="field">Issued to (optional email)
+<input type="email" id="couponEmail" placeholder="student@example.com" style="width:200px;">
+</div>
+<div class="field">Note (optional)
+<input type="text" id="couponNote" placeholder="e.g. referral, promo" style="width:220px;">
+</div>
+<button class="btn" id="couponGenBtn">Generate code</button>
+</div>
+<div class="row-msg" id="couponMsg"></div>
+<div class="code-result" id="couponResult">
+<div style="color:var(--gray); font-size:12px; margin-bottom:4px;">New code</div>
+<div class="code" id="couponCodeText"></div>
+<button class="btn secondary" id="couponCopyBtn" style="margin-top:10px;">Copy</button>
+</div>
+</div>
 
-      <div class="panel" id="rosterPanel">
-        <h2>Roster</h2>
-        <p class="desc">Everyone who has created a student account. Staff accounts (admins and trainers) aren't listed here.</p>
-        <table id="rosterTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Trainer</th><th>Code</th><th>Access</th><th>Expires</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
+<div class="panel" id="trainersPanel">
+<h2>Trainers</h2>
+<p class="desc">Staff with their own login who can view and log notes for their assigned students only. Promote an existing account to trainer, then assign students to them in the Roster below. Removing trainer access doesn't delete their login — it just takes away the trainer dashboard.</p>
+<div class="form-grid">
+<div class="field">Promote to trainer
+<select id="promoteTrainerSelect" style="width:240px;"></select>
+</div>
+<button class="btn" id="promoteTrainerBtn">Make trainer</button>
+</div>
+<div class="row-msg" id="trainerMsg"></div>
+<table id="trainersTable" style="margin-top:16px;">
+<thead><tr><th>Name</th><th>Email</th><th>Students assigned</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty hidden" id="trainersEmpty">No trainers yet.</div>
+</div>
 
-      <div class="panel" id="renewalsPanel">
-        <h2>Renewals due soon</h2>
-        <p class="desc">Active access expiring within 14 days.</p>
-        <table id="renewalsTable">
-          <thead><tr><th>Name</th><th>Email</th><th>Expires</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <div class="empty hidden" id="renewalsEmpty">Nothing coming up in the next two weeks.</div>
-        <p class="tip">Tip: if Gmail is your default mail handler in Chrome (chrome://settings/handlers), these open as a pre-filled compose window that Gmail autosaves as a draft within a few seconds.</p>
-      </div>
+<div class="panel" id="rosterPanel">
+<h2>Roster</h2>
+<p class="desc">Everyone who has created a student account. Staff accounts (admins and trainers) aren't listed here.</p>
+<table id="rosterTable">
+<thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Type</th><th>Trainer</th><th>Code</th><th>Access</th><th>Expires</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+</div>
 
-      <div class="panel" id="vocabTrainingPanel">
-        <h2>Vocabulary — training groups</h2>
-        <p class="desc">Pulled from each student's missed words across all categories (Consulting/Finance/GRE/Medical/SAT combined, not split by category). Pick the words to bundle into a group, sell them the time, and record results here once they've worked through it.</p>
-        <div id="vocabTrainingBody"><div class="empty">Loading…</div></div>
-      </div>
+<div class="panel" id="renewalsPanel">
+<h2>Renewals due soon</h2>
+<p class="desc">Active access expiring within 14 days.</p>
+<table id="renewalsTable">
+<thead><tr><th>Name</th><th>Email</th><th>Expires</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty hidden" id="renewalsEmpty">Nothing coming up in the next two weeks.</div>
+<p class="tip">Tip: if Gmail is your default mail handler in Chrome (chrome://settings/handlers), these open as a pre-filled compose window that Gmail autosaves as a draft within a few seconds.</p>
+</div>
 
-      <div class="panel" id="vocabProgressPanel">
-        <h2>Vocabulary — progress &amp; payment report</h2>
-        <p class="desc">Groups ready for a check-in or just completed. Use this to decide when to prompt a student, and to follow up for payment on the next round.</p>
-        <div id="vocabProgressBody"><div class="empty">Loading…</div></div>
-      </div>
+<div class="panel" id="vocabTrainingPanel">
+<h2>Vocabulary — training groups</h2>
+<p class="desc">Pulled from each student's missed words across all categories (Consulting/Finance/GRE/Medical/SAT combined, not split by category). Pick the words to bundle into a group, sell them the time, and record results here once they've worked through it.</p>
+<div id="vocabTrainingBody"><div class="empty">Loading…</div></div>
+</div>
 
-      <div class="panel" id="grammarTrainingPanel">
-        <h2>Grammar — training groups <span style="font-size:12px; color:var(--gray); font-weight:400;">(scaffold)</span></h2>
-        <p class="desc">Pre-test is in place. Training, post-test, and the retrain funnel aren't built yet — this mirrors the vocabulary structure (objectives instead of words) so it's ready to wire up once that's defined.</p>
-        <div class="soon-note">grammar_training_groups table exists and is wired for admin access, but no UI actions yet. Next: define how a grammar training group is built from missed objectives in grammar_diagnostic_results, then add create/record-post-test actions here same as vocabulary.</div>
-      </div>
-    </div>
-  </div>
+<div class="panel" id="vocabProgressPanel">
+<h2>Vocabulary — progress &amp; payment report</h2>
+<p class="desc">Groups ready for a check-in or just completed. Use this to decide when to prompt a student, and to follow up for payment on the next round.</p>
+<div id="vocabProgressBody"><div class="empty">Loading…</div></div>
+</div>
+
+<div class="panel" id="grammarTrainingPanel">
+<h2>Grammar — training groups <span style="font-size:12px; color:var(--gray); font-weight:400;">(scaffold)</span></h2>
+<p class="desc">Pre-test is in place. Training, post-test, and the retrain funnel aren't built yet — this mirrors the vocabulary structure (objectives instead of words) so it's ready to wire up once that's defined.</p>
+<div class="soon-note">grammar_training_groups table exists and is wired for admin access, but no UI actions yet. Next: define how a grammar training group is built from missed objectives in grammar_diagnostic_results, then add create/record-post-test actions here same as vocabulary.</div>
+</div>
+</div>
+</div>
 
 <script>
 (function(){
-  "use strict";
-  var SUPABASE_URL = "https://zqcwhsxaawmrckbglcim.supabase.co";
-  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
-  var STORAGE_KEY = "bt-session";
-  var LOGIN_URL = "index.html";
-
-  function loadSession(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
-    catch(e){ return null; }
-  }
-  function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
-  function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
-
-  function parseHashTokens(){
-    var hash = location.hash || "";
-    if (hash.indexOf("bt_access_token=") === -1) return null;
-    var params = new URLSearchParams(hash.replace(/^#/, ""));
-    var at = params.get("bt_access_token");
-    var rt = params.get("bt_refresh_token");
-    if (!at) return null;
-    return { access_token: at, refresh_token: rt };
-  }
-
-  function redirectToLogin(){
-    var returnTo = location.href.split("#")[0];
-    location.href = LOGIN_URL + "?return_to=" + encodeURIComponent(returnTo) + "&purpose=training";
-  }
-
-  function authFetch(path, opts){
-    opts = opts || {};
-    var session = loadSession();
-    var headers = {
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": "Bearer " + ((session && session.access_token) || ""),
-      "Content-Type": "application/json"
-    };
-    if (opts.headers){ for (var k in opts.headers){ headers[k] = opts.headers[k]; } }
-    opts.headers = headers;
-    return fetch(SUPABASE_URL + path, opts);
-  }
-
-  var currentUser = null;
-
-  function esc(s){
-    var d = document.createElement("div");
-    d.textContent = (s === null || s === undefined) ? "" : String(s);
-    return d.innerHTML;
-  }
-
-  function fmtDate(iso){
-    if (!iso) return "—";
-    var d = new Date(iso);
-    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-  }
-
-  function monthsFromNow(n){
-    var d = new Date();
-    d.setMonth(d.getMonth() + n);
-    return d.toISOString();
-  }
-
-  // ---------- init / auth ----------
-
-  function init(){
-    var fromHash = parseHashTokens();
-    if (fromHash){
-      saveSession(fromHash);
-      history.replaceState(null, "", location.pathname + location.search);
-    }
-    var session = loadSession();
-    if (!session || !session.access_token){
-      redirectToLogin();
-      return;
-    }
-    authFetch("/auth/v1/user").then(function(res){
-      if (!res.ok){ redirectToLogin(); return; }
-      return res.json().then(function(user){
-        currentUser = user;
-        return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=is_admin,full_name,email");
-      });
-    }).then(function(res){
-      if (!res) return;
-      return res.json();
-    }).then(function(rows){
-      if (!rows) return;
-      var profile = rows[0];
-      if (!profile || !profile.is_admin){
-        document.getElementById("gate").classList.add("hidden");
-        document.getElementById("denied").classList.remove("hidden");
-        return;
-      }
-      document.getElementById("whoami").textContent = "Signed in as " + (profile.email || currentUser.email || "");
-      document.getElementById("gate").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
-      loadAll();
-    }).catch(function(){
-      document.getElementById("gate").textContent = "Something went wrong checking your access. Please refresh.";
-    });
-  }
-
-  function loadAll(){
-    loadSubscriptionRequests();
-    loadPendingAndRoster();
-    loadVocabTraining();
-    loadVocabProgress();
-    // couponPanel needs no initial load
-  }
-
-  // ---------- subscription requests (from placement/diagnostic results screens) ----------
-
-  var SUB_TRACK_LABELS = { vocabulary: "Vocabulary", grammar: "Grammar", language_clarity: "Language Clarity" };
-
-  function loadSubscriptionRequests(){
-    authFetch("/rest/v1/subscription_requests?status=eq.pending&select=id,user_id,email,full_name,track,requested_at&order=requested_at.asc").then(function(r){ return r.ok ? r.json() : []; }).then(renderSubscriptionRequests);
-  }
-
-  function renderSubscriptionRequests(rows){
-    var tbody = document.querySelector("#subTable tbody");
-    tbody.innerHTML = "";
-    rows = rows || [];
-    document.getElementById("subEmpty").classList.toggle("hidden", rows.length > 0);
-    rows.forEach(function(req){
-      var tr = document.createElement("tr");
-      var tdName = document.createElement("td"); tdName.textContent = req.full_name || "—";
-      var tdEmail = document.createElement("td"); tdEmail.textContent = req.email || "—";
-      var tdTrack = document.createElement("td"); tdTrack.textContent = SUB_TRACK_LABELS[req.track] || req.track || "—";
-      var tdWhen = document.createElement("td"); tdWhen.textContent = fmtDate(req.requested_at);
-      var tdAction = document.createElement("td");
-      var btn = document.createElement("button");
-      btn.className = "btn";
-      btn.textContent = "Mark invoiced";
-      btn.addEventListener("click", function(){
-        btn.disabled = true; btn.textContent = "Saving…";
-        markInvoiced(req, function(ok, err){
-          if (ok){
-            loadSubscriptionRequests();
-          } else {
-            btn.disabled = false; btn.textContent = "Mark invoiced";
-            alert(err || "Something went wrong.");
-          }
-        });
-      });
-      tdAction.appendChild(btn);
-      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdTrack); tr.appendChild(tdWhen); tr.appendChild(tdAction);
-      tbody.appendChild(tr);
-    });
-  }
-
-  function markInvoiced(req, cb){
-    authFetch("/rest/v1/subscription_requests?id=eq." + encodeURIComponent(req.id), {
-      method: "PATCH",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({ status: "invoiced", invoiced_at: new Date().toISOString() })
-    }).then(function(res){
-      if (res.ok) { cb(true); }
-      else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
-    }).catch(function(){ cb(false, "Network error."); });
-  }
-
-  // ---------- shared data load (profiles + access_grants), feeds pending / roster / renewals / trainers ----------
-
-  function loadPendingAndRoster(){
-    Promise.all([
-      authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin,is_trainer,trainer_id&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
-      authFetch("/rest/v1/access_grants?select=id,user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
-      authFetch("/rest/v1/coupon_codes?select=code,redeemed_by,redeemed_at&redeemed_by=not.is.null&order=redeemed_at.desc").then(function(r){ return r.ok ? r.json() : []; })
-    ]).then(function(results){
-      var profiles = results[0] || [];
-      var grants = results[1] || [];
-      var codes = results[2] || [];
-      var grantsByUser = {};
-      grants.forEach(function(g){
-        // keep the most-recently-expiring grant per user (list is already sorted desc)
-        if (!grantsByUser[g.user_id]) grantsByUser[g.user_id] = g;
-      });
-      var codeByUser = {};
-      codes.forEach(function(c){
-        // keep the most-recently-redeemed code per user (list is already sorted desc)
-        if (!codeByUser[c.redeemed_by]) codeByUser[c.redeemed_by] = c;
-      });
-      renderTrainers(profiles);
-      renderRoster(profiles, grantsByUser, codeByUser);
-      renderPending(profiles, grantsByUser);
-      renderRenewals(profiles, grantsByUser);
-    }).catch(function(){
-      document.getElementById("rosterTable").querySelector("tbody").innerHTML = "";
-    });
-  }
-
-  // ---------- trainers ----------
-
-  function renderTrainers(profiles){
-    var trainers = profiles.filter(function(p){ return p.is_trainer; });
-    var tbody = document.querySelector("#trainersTable tbody");
-    tbody.innerHTML = "";
-    document.getElementById("trainersEmpty").classList.toggle("hidden", trainers.length > 0);
-    trainers.forEach(function(t){
-      var count = profiles.filter(function(p){ return p.trainer_id === t.id; }).length;
-      var tr = document.createElement("tr");
-      var tdName = document.createElement("td"); tdName.textContent = t.full_name || "—";
-      var tdEmail = document.createElement("td"); tdEmail.textContent = t.email || "—";
-      var tdCount = document.createElement("td"); tdCount.textContent = String(count);
-      var tdAction = document.createElement("td");
-      var btn = document.createElement("button");
-      btn.className = "mini-btn";
-      btn.textContent = "Remove trainer access";
-      btn.addEventListener("click", function(){
-        if (count > 0 && !confirm("This trainer still has " + count + " student(s) assigned. Remove trainer access anyway? (The students stay assigned to them behind the scenes — reassign them in the Roster first if you want to hand them to someone else.)")) return;
-        btn.disabled = true; btn.textContent = "Removing…";
-        authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(t.id), {
-          method: "PATCH",
-          headers: { "Prefer": "return=minimal" },
-          body: JSON.stringify({ is_trainer: false })
-        }).then(function(res){
-          if (res.ok){ loadPendingAndRoster(); }
-          else { btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Something went wrong."); }
-        }).catch(function(){ btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Network error."); });
-      });
-      tdAction.appendChild(btn);
-      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCount); tr.appendChild(tdAction);
-      tbody.appendChild(tr);
-    });
-
-    var select = document.getElementById("promoteTrainerSelect");
-    var promoteBtn = document.getElementById("promoteTrainerBtn");
-    var eligible = profiles.filter(function(p){ return !p.is_trainer; });
-    select.innerHTML = "";
-    if (!eligible.length){
-      var opt = document.createElement("option");
-      opt.textContent = "No eligible accounts";
-      opt.disabled = true;
-      select.appendChild(opt);
-      promoteBtn.disabled = true;
-    } else {
-      promoteBtn.disabled = false;
-      eligible.forEach(function(p){
-        var o = document.createElement("option");
-        o.value = p.id;
-        var label = p.full_name || p.email || p.id;
-        if (p.email && p.full_name) label += " (" + p.email + ")";
-        if (p.is_admin) label += " — admin";
-        o.textContent = label;
-        select.appendChild(o);
-      });
-    }
-  }
-
-  document.getElementById("promoteTrainerBtn").addEventListener("click", function(){
-    var select = document.getElementById("promoteTrainerSelect");
-    var msg = document.getElementById("trainerMsg");
-    var id = select.value;
-    if (!id) return;
-    var btn = document.getElementById("promoteTrainerBtn");
-    btn.disabled = true; btn.textContent = "Saving…"; msg.textContent = "";
-    authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(id), {
-      method: "PATCH",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({ is_trainer: true })
-    }).then(function(res){
-      btn.disabled = false; btn.textContent = "Make trainer";
-      if (res.ok){
-        msg.style.color = "var(--ok)";
-        msg.textContent = "Done.";
-        loadPendingAndRoster();
-      } else {
-        msg.style.color = "var(--bad)";
-        msg.textContent = "Something went wrong.";
-      }
-    }).catch(function(){
-      btn.disabled = false; btn.textContent = "Make trainer";
-      msg.style.color = "var(--bad)";
-      msg.textContent = "Network error.";
-    });
-  });
-
-  function statusPillHtml(grant){
-    var now = new Date();
-    if (!grant) return '<span class="pill none">No access</span>';
-    if (grant.status === "active" && grant.expires_at && new Date(grant.expires_at) > now){
-      return '<span class="pill active">Active</span>';
-    }
-    if (grant.status === "pending"){
-      return '<span class="pill pending">Pending</span>';
-    }
-    return '<span class="pill expired">Expired</span>';
-  }
-
-  function renderRoster(profiles, grantsByUser, codeByUser){
-    var tbody = document.querySelector("#rosterTable tbody");
-    tbody.innerHTML = "";
-    var trainers = profiles.filter(function(p){ return p.is_trainer; });
-    var students = profiles.filter(function(p){ return !p.is_admin && !p.is_trainer; });
-    students.forEach(function(p){
-      var grant = grantsByUser[p.id];
-      var code = codeByUser ? codeByUser[p.id] : null;
-      var tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td>" + esc(p.full_name || "—") + "</td>" +
-        "<td>" + esc(p.email || "—") + "</td>" +
-        "<td>" + esc(p.company || "—") + "</td>" +
-        "<td>" + esc(p.student_type || "—") + "</td>";
-
-      var tdTrainer = document.createElement("td");
-      var trainerSelect = document.createElement("select");
-      trainerSelect.style.minWidth = "150px";
-      var noneOpt = document.createElement("option");
-      noneOpt.value = "";
-      noneOpt.textContent = "— unassigned —";
-      trainerSelect.appendChild(noneOpt);
-      trainers.forEach(function(t){
-        var o = document.createElement("option");
-        o.value = t.id;
-        o.textContent = t.full_name || t.email || t.id;
-        if (p.trainer_id === t.id) o.selected = true;
-        trainerSelect.appendChild(o);
-      });
-      if (!p.trainer_id) noneOpt.selected = true;
-      var trainerMsg = document.createElement("div");
-      trainerMsg.className = "row-msg";
-      trainerSelect.addEventListener("change", function(){
-        var val = trainerSelect.value || null;
-        trainerSelect.disabled = true;
-        trainerMsg.textContent = "";
-        authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(p.id), {
-          method: "PATCH",
-          headers: { "Prefer": "return=minimal" },
-          body: JSON.stringify({ trainer_id: val })
-        }).then(function(res){
-          trainerSelect.disabled = false;
-          if (res.ok){
-            p.trainer_id = val;
-            trainerMsg.style.color = "var(--ok)";
-            trainerMsg.textContent = "Saved.";
-            setTimeout(function(){ trainerMsg.textContent = ""; }, 1500);
-          } else {
-            trainerMsg.style.color = "var(--bad)";
-            trainerMsg.textContent = "Couldn't save.";
-          }
-        }).catch(function(){
-          trainerSelect.disabled = false;
-          trainerMsg.style.color = "var(--bad)";
-          trainerMsg.textContent = "Network error.";
-        });
-      });
-      tdTrainer.appendChild(trainerSelect);
-      tdTrainer.appendChild(trainerMsg);
-      tr.appendChild(tdTrainer);
-
-      var tdCode = document.createElement("td"); tdCode.textContent = code ? code.code : "—";
-      var tdAccess = document.createElement("td"); tdAccess.innerHTML = statusPillHtml(grant);
-      var tdExpires = document.createElement("td"); tdExpires.textContent = grant ? fmtDate(grant.expires_at) : "—";
-      tr.appendChild(tdCode); tr.appendChild(tdAccess); tr.appendChild(tdExpires);
-
-      var tdAction = document.createElement("td");
-      if (grant){
-        var btn = document.createElement("button");
-        btn.className = "btn secondary";
-        btn.textContent = "Renew +1 month";
-        btn.addEventListener("click", function(){
-          btn.disabled = true; btn.textContent = "Renewing…";
-          renewGrant(grant, function(ok, err){
-            if (ok){
-              loadPendingAndRoster();
-            } else {
-              btn.disabled = false; btn.textContent = "Renew +1 month";
-              alert(err || "Something went wrong.");
-            }
-          });
-        });
-        tdAction.appendChild(btn);
-      } else {
-        tdAction.textContent = "—";
-      }
-      tdAction.appendChild(buildDeleteControl(p));
-      tr.appendChild(tdAction);
-      tbody.appendChild(tr);
-    });
-  }
-
-  function buildDeleteControl(profile){
-    var holder = document.createElement("div");
-
-    var delBtn = document.createElement("button");
-    delBtn.className = "mini-btn";
-    delBtn.style.borderColor = "var(--bad)";
-    delBtn.style.color = "var(--bad)";
-    delBtn.textContent = "Delete";
-
-    var confirmBox = document.createElement("div");
-    confirmBox.className = "hidden";
-    confirmBox.style.marginTop = "6px";
-
-    var warn = document.createElement("div");
-    warn.className = "row-msg";
-    warn.style.color = "var(--bad)";
-    warn.style.maxWidth = "220px";
-    warn.textContent = "Permanently deletes " + (profile.full_name || profile.email || "this student") + " — all results, training history, and their login. Cannot be undone. Type their name or email to confirm:";
-    confirmBox.appendChild(warn);
-
-    var input = document.createElement("input");
-    input.type = "text";
-    input.placeholder = profile.full_name || profile.email || "";
-    input.style.width = "160px";
-    input.style.marginTop = "6px";
-    input.style.display = "block";
-    confirmBox.appendChild(input);
-
-    var btnRow = document.createElement("div");
-    btnRow.style.marginTop = "6px";
-
-    var confirmBtn = document.createElement("button");
-    confirmBtn.className = "mini-btn";
-    confirmBtn.style.borderColor = "var(--bad)";
-    confirmBtn.style.color = "var(--bad)";
-    confirmBtn.textContent = "Confirm delete";
-    confirmBtn.disabled = true;
-
-    var cancelBtn = document.createElement("button");
-    cancelBtn.className = "mini-btn";
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.style.marginLeft = "6px";
-
-    btnRow.appendChild(confirmBtn);
-    btnRow.appendChild(cancelBtn);
-    confirmBox.appendChild(btnRow);
-
-    var msg = document.createElement("div");
-    msg.className = "row-msg";
-    confirmBox.appendChild(msg);
-
-    holder.appendChild(delBtn);
-    holder.appendChild(confirmBox);
-
-    function matches(){
-      var v = input.value.trim().toLowerCase();
-      if (!v) return false;
-      var name = (profile.full_name || "").trim().toLowerCase();
-      var email = (profile.email || "").trim().toLowerCase();
-      return (name && v === name) || (email && v === email);
-    }
-
-    input.addEventListener("input", function(){
-      confirmBtn.disabled = !matches();
-    });
-    input.addEventListener("keydown", function(e){
-      if (e.key === "Enter" && matches()) confirmBtn.click();
-    });
-
-    delBtn.addEventListener("click", function(){
-      delBtn.classList.add("hidden");
-      confirmBox.classList.remove("hidden");
-      input.focus();
-    });
-
-    cancelBtn.addEventListener("click", function(){
-      input.value = "";
-      confirmBtn.disabled = true;
-      msg.textContent = "";
-      confirmBox.classList.add("hidden");
-      delBtn.classList.remove("hidden");
-    });
-
-    confirmBtn.addEventListener("click", function(){
-      if (!matches()) return;
-      confirmBtn.disabled = true; cancelBtn.disabled = true;
-      confirmBtn.textContent = "Deleting…";
-      msg.textContent = "";
-      authFetch("/functions/v1/delete-student", {
-        method: "POST",
-        body: JSON.stringify({ user_id: profile.id })
-      }).then(function(res){
-        return res.json().catch(function(){ return {}; }).then(function(data){
-          if (res.ok && data.success){
-            msg.style.color = "var(--ok)";
-            msg.textContent = "Deleted.";
-            setTimeout(loadPendingAndRoster, 700);
-          } else {
-            confirmBtn.disabled = false; cancelBtn.disabled = false;
-            confirmBtn.textContent = "Confirm delete";
-            msg.style.color = "var(--bad)";
-            msg.textContent = (data && data.error) || "Something went wrong.";
-          }
-        });
-      }).catch(function(){
-        confirmBtn.disabled = false; cancelBtn.disabled = false;
-        confirmBtn.textContent = "Confirm delete";
-        msg.style.color = "var(--bad)";
-        msg.textContent = "Network error.";
-      });
-    });
-
-    return holder;
-  }
-
-  function renewGrant(grant, cb){
-    var now = new Date();
-    var base = (grant.expires_at && new Date(grant.expires_at) > now) ? new Date(grant.expires_at) : now;
-    var newExpiry = new Date(base.getTime());
-    newExpiry.setMonth(newExpiry.getMonth() + 1);
-    authFetch("/rest/v1/access_grants?id=eq." + encodeURIComponent(grant.id), {
-      method: "PATCH",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({ expires_at: newExpiry.toISOString() })
-    }).then(function(res){
-      if (res.ok) { cb(true); }
-      else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
-    }).catch(function(){ cb(false, "Network error."); });
-  }
-
-  function renderPending(profiles, grantsByUser){
-    var tbody = document.querySelector("#pendingTable tbody");
-    tbody.innerHTML = "";
-    var pending = profiles.filter(function(p){
-      return p.student_type === "corporate_sponsor" && !p.is_admin && !p.is_trainer && !grantsByUser[p.id];
-    });
-    document.getElementById("pendingEmpty").classList.toggle("hidden", pending.length > 0);
-    pending.forEach(function(p){
-      var tr = document.createElement("tr");
-      var tdName = document.createElement("td"); tdName.textContent = p.full_name || "—";
-      var tdEmail = document.createElement("td"); tdEmail.textContent = p.email || "—";
-      var tdCompany = document.createElement("td"); tdCompany.textContent = p.company || "—";
-      var tdSignedUp = document.createElement("td"); tdSignedUp.textContent = fmtDate(p.created_at);
-
-      var tdMonths = document.createElement("td");
-      var monthsSel = document.createElement("select");
-      [1,3,6,12].forEach(function(m){
-        var opt = document.createElement("option");
-        opt.value = m; opt.textContent = m + (m === 1 ? " month" : " months");
-        if (m === 1) opt.selected = true;
-        monthsSel.appendChild(opt);
-      });
-      tdMonths.appendChild(monthsSel);
-
-      var tdAction = document.createElement("td");
-      var btn = document.createElement("button");
-      btn.className = "btn"; btn.textContent = "Grant access";
-      var msg = document.createElement("div"); msg.className = "row-msg";
-      btn.addEventListener("click", function(){
-        btn.disabled = true; btn.textContent = "Granting…";
-        var months = parseInt(monthsSel.value, 10);
-        approveSponsor(p, months, function(ok, err){
-          if (ok){
-            msg.textContent = "Access granted.";
-            msg.style.color = "var(--ok)";
-            btn.textContent = "Granted";
-            setTimeout(loadPendingAndRoster, 800);
-          } else {
-            btn.disabled = false; btn.textContent = "Grant access";
-            msg.textContent = err || "Something went wrong.";
-            msg.style.color = "var(--bad)";
-          }
-        });
-      });
-      tdAction.appendChild(btn);
-      tdAction.appendChild(msg);
-
-      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCompany);
-      tr.appendChild(tdSignedUp); tr.appendChild(tdMonths); tr.appendChild(tdAction);
-      tbody.appendChild(tr);
-    });
-  }
-
-  function approveSponsor(profile, months, cb){
-    var body = {
-      user_id: profile.id,
-      student_type: "corporate_sponsor",
-      sponsor_org: profile.company || null,
-      status: "active",
-      starts_at: new Date().toISOString(),
-      expires_at: monthsFromNow(months),
-      granted_by: currentUser.id
-    };
-    authFetch("/rest/v1/access_grants", {
-      method: "POST",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify(body)
-    }).then(function(res){
-      if (res.ok) { cb(true); }
-      else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
-    }).catch(function(){ cb(false, "Network error."); });
-  }
-
-  function renderRenewals(profiles, grantsByUser){
-    var tbody = document.querySelector("#renewalsTable tbody");
-    tbody.innerHTML = "";
-    var now = new Date();
-    var soon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-    var profileById = {};
-    profiles.forEach(function(p){ profileById[p.id] = p; });
-
-    var due = Object.keys(grantsByUser).map(function(uid){
-      return { profile: profileById[uid], grant: grantsByUser[uid] };
-    }).filter(function(row){
-      if (!row.profile || !row.grant) return false;
-      if (row.profile.is_admin || row.profile.is_trainer) return false;
-      if (row.grant.status !== "active") return false;
-      var exp = new Date(row.grant.expires_at);
-      return exp > now && exp <= soon;
-    }).sort(function(a,b){ return new Date(a.grant.expires_at) - new Date(b.grant.expires_at); });
-
-    document.getElementById("renewalsEmpty").classList.toggle("hidden", due.length > 0);
-
-    due.forEach(function(row){
-      var p = row.profile, g = row.grant;
-      var tr = document.createElement("tr");
-      var tdName = document.createElement("td"); tdName.textContent = p.full_name || "—";
-      var tdEmail = document.createElement("td"); tdEmail.textContent = p.email || "—";
-      var tdExp = document.createElement("td"); tdExp.textContent = fmtDate(g.expires_at);
-      var tdAction = document.createElement("td");
-      var btn = document.createElement("button");
-      btn.className = "btn secondary"; btn.textContent = "Create reminder draft";
-      btn.addEventListener("click", function(){
-        btn.disabled = true; btn.textContent = "Preparing…";
-        buildReminderMailto(p, g).then(function(url){
-          window.open(url, "_blank");
-          btn.disabled = false; btn.textContent = "Create reminder draft";
-        });
-      });
-      tdAction.appendChild(btn);
-      tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdExp); tr.appendChild(tdAction);
-      tbody.appendChild(tr);
-    });
-  }
-
-  function buildReminderMailto(profile, grant){
-    return authFetch("/rest/v1/grammar_diagnostic_results?user_id=eq." + encodeURIComponent(profile.id) + "&select=overall_pct,test_type,created_at&order=created_at.desc&limit=1")
-      .then(function(r){ return r.ok ? r.json() : []; })
-      .catch(function(){ return []; })
-      .then(function(rows){
-        var progressLine = "";
-        if (rows && rows[0] && rows[0].overall_pct !== null && rows[0].overall_pct !== undefined){
-          progressLine = "Last time we checked in, your grammar score was " + Math.round(rows[0].overall_pct) + "% — nice work. ";
-        }
-        var name = (profile.full_name || "").split(" ")[0] || "there";
-        var subject = "Time to renew your Bespoken English training access";
-        var body =
-          "Hi " + name + ",\n\n" +
-          "I wanted to check in on your training with Bespoken English. " + progressLine + "\n\n" +
-          "Your access is set to expire on " + fmtDate(grant.expires_at) + ". If you'd like to keep going, just reply to this email and I'll get you set up.\n\n" +
-          "Education made just for you.\n\n" +
-          "Bespoken English";
-        var mailto = "mailto:" + encodeURIComponent(profile.email || "") +
-          "?subject=" + encodeURIComponent(subject) +
-          "&body=" + encodeURIComponent(body);
-        return mailto;
-      });
-  }
-
-  // ---------- coupon generator ----------
-
-  function generateCode(){
-    var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
-    var s = "";
-    for (var i = 0; i < 6; i++){ s += chars.charAt(Math.floor(Math.random() * chars.length)); }
-    return "BE-" + s;
-  }
-
-  document.getElementById("couponGenBtn").addEventListener("click", function(){
-    var btn = document.getElementById("couponGenBtn");
-    var msg = document.getElementById("couponMsg");
-    var type = document.getElementById("couponType").value;
-    var months = parseInt(document.getElementById("couponMonths").value, 10) || 1;
-    var email = document.getElementById("couponEmail").value.trim();
-    var note = document.getElementById("couponNote").value.trim();
-    var code = generateCode();
-
-    btn.disabled = true; btn.textContent = "Generating…"; msg.textContent = "";
-
-    authFetch("/rest/v1/coupon_codes", {
-      method: "POST",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({
-        code: code,
-        student_type: type,
-        grants_months: months,
-        issued_to_email: email || null,
-        note: note || null,
-        created_by: currentUser.id
-      })
-    }).then(function(res){
-      btn.disabled = false; btn.textContent = "Generate code";
-      if (res.ok){
-        document.getElementById("couponCodeText").textContent = code;
-        document.getElementById("couponResult").style.display = "block";
-        msg.textContent = "";
-        document.getElementById("couponEmail").value = "";
-        document.getElementById("couponNote").value = "";
-      } else {
-        res.json().catch(function(){ return {}; }).then(function(e){
-          msg.style.color = "var(--bad)";
-          msg.textContent = (e && e.message) || "Couldn't create that code. Please try again.";
-        });
-      }
-    }).catch(function(){
-      btn.disabled = false; btn.textContent = "Generate code";
-      msg.style.color = "var(--bad)";
-      msg.textContent = "Network error.";
-    });
-  });
-
-  document.getElementById("couponCopyBtn").addEventListener("click", function(){
-    var text = document.getElementById("couponCodeText").textContent;
-    navigator.clipboard.writeText(text).then(function(){
-      var btn = document.getElementById("couponCopyBtn");
-      var old = btn.textContent;
-      btn.textContent = "Copied!";
-      setTimeout(function(){ btn.textContent = old; }, 1500);
-    });
-  });
-
-
-  // ---------- vocabulary training groups (Phase 4) ----------
-
-  function vocabPoolFromResults(results){
-    // results is the placement_results.results jsonb: { con:{pct,score,total,missed:[...]}, fin:{...}, ... }
-    var totalWords = 0;
-    var missed = [];
-    if (!results) return { totalWords: 0, missed: [] };
-    Object.keys(results).forEach(function(cat){
-      var c = results[cat];
-      if (!c) return;
-      totalWords += (c.total || 0);
-      (c.missed || []).forEach(function(w){ missed.push({ word: w, category: cat }); });
-    });
-    return { totalWords: totalWords, missed: missed };
-  }
-
-  function computeVocabState(preResults, groups){
-    var base = vocabPoolFromResults(preResults);
-    var status = {}; // word -> 'unassigned' | 'training' | 'mastered' | 'missed'
-    base.missed.forEach(function(m){ status[m.word] = { category: m.category, state: 'unassigned' }; });
-    var sorted = (groups || []).slice().sort(function(a,b){ return a.round_number - b.round_number; });
-    var openGroup = null;
-    sorted.forEach(function(g){
-      (g.words || []).forEach(function(w){
-        status[w.word] = { category: w.category, state: (g.status === 'completed') ? (w.status === 'mastered' ? 'mastered' : 'missed') : 'training' };
-      });
-      if (g.status !== 'completed') openGroup = g;
-    });
-    var pool = [];
-    var masteredCount = 0;
-    Object.keys(status).forEach(function(word){
-      var s = status[word];
-      if (s.state === 'mastered') masteredCount++;
-      if (s.state === 'unassigned' || s.state === 'missed') pool.push({ word: word, category: s.category });
-    });
-    return { totalWords: base.totalWords, pool: pool, masteredCount: masteredCount, openGroup: openGroup, wordStatus: status };
-  }
-
-  var vocabCache = null; // { profiles, preByUser, groupsByUser }
-
-  function loadVocabTrainingData(){
-    return Promise.all([
-      authFetch("/rest/v1/profiles?select=id,full_name,email&order=full_name.asc").then(function(r){ return r.ok ? r.json() : []; }),
-      authFetch("/rest/v1/placement_results?user_id=not.is.null&test_type=eq.pre&select=user_id,results,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
-      authFetch("/rest/v1/vocab_training_groups?select=*&order=round_number.asc").then(function(r){ return r.ok ? r.json() : []; })
-    ]).then(function(results){
-      var profiles = results[0] || [];
-      var preRows = results[1] || [];
-      var groupRows = results[2] || [];
-      var preByUser = {};
-      preRows.forEach(function(row){ if (!preByUser[row.user_id]) preByUser[row.user_id] = row; }); // most recent pre-test per user
-      var groupsByUser = {};
-      groupRows.forEach(function(g){
-        if (!groupsByUser[g.user_id]) groupsByUser[g.user_id] = [];
-        groupsByUser[g.user_id].push(g);
-      });
-      vocabCache = { profiles: profiles, preByUser: preByUser, groupsByUser: groupsByUser };
-      return vocabCache;
-    });
-  }
-
-  function loadVocabTraining(){
-    var body = document.getElementById("vocabTrainingBody");
-    loadVocabTrainingData().then(function(cache){
-      var studentsWithPre = cache.profiles.filter(function(p){ return cache.preByUser[p.id]; });
-      if (!studentsWithPre.length){
-        body.innerHTML = '<div class="empty">No students have a vocabulary pre-test tied to their account yet (needs user_id on placement_results).</div>';
-        return;
-      }
-      body.innerHTML = "";
-      studentsWithPre.forEach(function(p){
-        body.appendChild(renderStudentVocabBlock(p, cache));
-      });
-    }).catch(function(){
-      body.innerHTML = '<div class="empty">Couldn\'t load vocabulary training data.</div>';
-    });
-  }
-
-  function renderStudentVocabBlock(profile, cache){
-    var preRow = cache.preByUser[profile.id];
-    var groups = cache.groupsByUser[profile.id] || [];
-    var state = computeVocabState(preRow.results, groups);
-
-    var wrap = document.createElement("div");
-    wrap.className = "student-block";
-
-    var head = document.createElement("div");
-    head.className = "student-head";
-    head.innerHTML =
-      '<div><span class="sname">' + esc(profile.full_name || profile.email || "—") + '</span> ' +
-      '<span class="smeta">' + esc(profile.email || "") + '</span></div>' +
-      '<div class="smeta">' + state.masteredCount + ' / ' + state.totalWords + ' words mastered</div>';
-    wrap.appendChild(head);
-
-    if (state.openGroup){
-      var openNote = document.createElement("div");
-      openNote.className = "stat-line";
-      openNote.textContent = "Round " + state.openGroup.round_number + " is currently in training (" + (state.openGroup.words || []).length + " words" + (state.openGroup.time_estimate ? ", sold: " + state.openGroup.time_estimate : "") + ") — record results below before starting a new group.";
-      wrap.appendChild(openNote);
-    } else if (state.pool.length){
-      wrap.appendChild(renderCreateGroupForm(profile, state, groups));
-    } else {
-      var doneNote = document.createElement("div");
-      doneNote.className = "stat-line";
-      doneNote.textContent = "No missed words waiting in the pool right now.";
-      wrap.appendChild(doneNote);
-    }
-
-    groups.slice().sort(function(a,b){ return b.round_number - a.round_number; }).forEach(function(g){
-      wrap.appendChild(renderGroupCard(profile, g));
-    });
-
-    return wrap;
-  }
-
-  function renderCreateGroupForm(profile, state, existingGroups){
-    var box = document.createElement("div");
-    var poolLabel = document.createElement("div");
-    poolLabel.className = "stat-line";
-    poolLabel.textContent = "Missed-word pool (" + state.pool.length + " words, all categories):";
-    box.appendChild(poolLabel);
-
-    var poolDiv = document.createElement("div");
-    poolDiv.className = "word-pool";
-    state.pool.forEach(function(item){
-      var chip = document.createElement("label");
-      chip.className = "word-chip";
-      var cb = document.createElement("input");
-      cb.type = "checkbox"; cb.checked = true; cb.value = item.word; cb.setAttribute("data-cat", item.category);
-      chip.appendChild(cb);
-      var txt = document.createElement("span");
-      txt.textContent = item.word + " (" + item.category + ")";
-      chip.appendChild(txt);
-      poolDiv.appendChild(chip);
-    });
-    box.appendChild(poolDiv);
-
-    var formRow = document.createElement("div");
-    formRow.className = "form-grid";
-    var estField = document.createElement("div");
-    estField.className = "field";
-    estField.innerHTML = 'Time sold (free text)<input type="text" placeholder="e.g. 3 hours over 2 weeks" style="width:220px;">';
-    formRow.appendChild(estField);
-    var btn = document.createElement("button");
-    btn.className = "btn"; btn.textContent = "Create training group";
-    formRow.appendChild(btn);
-    var msg = document.createElement("div");
-    msg.className = "row-msg";
-    box.appendChild(formRow);
-    box.appendChild(msg);
-
-    btn.addEventListener("click", function(){
-      var checked = Array.prototype.slice.call(poolDiv.querySelectorAll("input[type=checkbox]:checked"));
-      if (!checked.length){ msg.style.color = "var(--bad)"; msg.textContent = "Select at least one word."; return; }
-      var words = checked.map(function(cb){ return { word: cb.value, category: cb.getAttribute("data-cat"), status: "training" }; });
-      var nextRound = existingGroups.reduce(function(m,g){ return Math.max(m, g.round_number); }, 0) + 1;
-      var estInput = estField.querySelector("input");
-      btn.disabled = true; btn.textContent = "Creating…";
-      authFetch("/rest/v1/vocab_training_groups", {
-        method: "POST",
-        headers: { "Prefer": "return=minimal" },
-        body: JSON.stringify({
-          user_id: profile.id,
-          round_number: nextRound,
-          words: words,
-          time_estimate: estInput.value.trim() || null,
-          status: "assigned"
-        })
-      }).then(function(res){
-        if (res.ok){
-          msg.style.color = "var(--ok)"; msg.textContent = "Group created.";
-          setTimeout(loadVocabTraining, 700);
-        } else {
-          btn.disabled = false; btn.textContent = "Create training group";
-          res.json().catch(function(){ return {}; }).then(function(e){
-            msg.style.color = "var(--bad)"; msg.textContent = (e && e.message) || "Something went wrong.";
-          });
-        }
-      }).catch(function(){
-        btn.disabled = false; btn.textContent = "Create training group";
-        msg.style.color = "var(--bad)"; msg.textContent = "Network error.";
-      });
-    });
-
-    return box;
-  }
-
-  function renderGroupCard(profile, group){
-    var card = document.createElement("div");
-    card.className = "group-card";
-    var words = group.words || [];
-    var top = document.createElement("div");
-    top.className = "gc-top";
-    var statusBadge = "";
-    if (group.status === "completed"){
-      statusBadge = '<span class="badge ' + (group.post_test_pct >= 85 ? "pass" : "fail") + '">' + Math.round(group.post_test_pct || 0) + '% on post-test</span>';
-    } else {
-      statusBadge = '<span class="badge training">In training</span>';
-    }
-    top.innerHTML =
-      '<div><b>Round ' + group.round_number + '</b> — ' + words.length + ' words' +
-      (group.time_estimate ? ' · sold: ' + esc(group.time_estimate) : '') +
-      ' · created ' + fmtDate(group.created_at) + '</div>' +
-      '<div>' + statusBadge + '</div>';
-    card.appendChild(top);
-
-    if (group.status !== "completed"){
-      var waitNote = document.createElement("div");
-      waitNote.className = "stat-line";
-      waitNote.style.color = "var(--gray)";
-      waitNote.style.marginTop = "8px";
-      waitNote.textContent = "Waiting on the student to take their auto-graded post-test.";
-      card.appendChild(waitNote);
-    } else {
-      var stillMissed = words.filter(function(w){ return w.status !== "mastered"; }).map(function(w){ return w.word; });
-      if (stillMissed.length){
-        var missedLine = document.createElement("div");
-        missedLine.className = "stat-line";
-        missedLine.style.color = "var(--gray)";
-        missedLine.textContent = "Still missed: " + stillMissed.join(", ");
-        card.appendChild(missedLine);
-      }
-    }
-    return card;
-  }
-
-  // ---------- vocabulary progress & payment report ----------
-
-  function loadVocabProgress(){
-    var body = document.getElementById("vocabProgressBody");
-    var dataPromise = vocabCache ? Promise.resolve(vocabCache) : loadVocabTrainingData();
-    dataPromise.then(function(cache){
-      var rows = [];
-      cache.profiles.forEach(function(p){
-        var preRow = cache.preByUser[p.id];
-        if (!preRow) return;
-        var groups = cache.groupsByUser[p.id] || [];
-        if (!groups.length) return;
-        var state = computeVocabState(preRow.results, groups);
-        var latest = groups.slice().sort(function(a,b){ return b.round_number - a.round_number; })[0];
-        rows.push({ profile: p, state: state, latest: latest });
-      });
-      if (!rows.length){
-        body.innerHTML = '<div class="empty">No training groups yet — create one above to start tracking progress.</div>';
-        return;
-      }
-      body.innerHTML = "";
-      rows.forEach(function(row){
-        body.appendChild(renderProgressRow(row));
-      });
-    }).catch(function(){
-      body.innerHTML = '<div class="empty">Couldn\'t load progress data.</div>';
-    });
-  }
-
-  function renderProgressRow(row){
-    var p = row.profile, state = row.state, latest = row.latest;
-    var card = document.createElement("div");
-    card.className = "group-card";
-
-    var target90 = Math.ceil(state.totalWords * 0.9);
-    var remaining = Math.max(0, target90 - state.masteredCount);
-    var weeks = remaining > 0 ? Math.ceil(remaining / 10) : 0;
-
-    var lines = [];
-    lines.push('<div class="gc-top"><div><b>' + esc(p.full_name || p.email || "—") + '</b> <span class="smeta">' + esc(p.email || "") + '</span></div>' +
-      '<div>' + (latest.status === "completed"
-        ? '<span class="badge ' + (latest.post_test_pct >= 85 ? "pass" : "fail") + '">Round ' + latest.round_number + ': ' + Math.round(latest.post_test_pct || 0) + '%</span>'
-        : '<span class="badge training">Round ' + latest.round_number + ' in training</span>') + '</div></div>');
-
-    lines.push('<div class="stat-line">' + state.masteredCount + ' / ' + state.totalWords + ' words mastered overall.</div>');
-
-    if (remaining > 0){
-      lines.push('<div class="stat-line">Needs ' + remaining + ' more mastered words to reach 90% overall — about ' + weeks + ' week' + (weeks === 1 ? "" : "s") + ' at 10 new words/week.</div>');
-    } else {
-      lines.push('<div class="stat-line" style="color:var(--ok);">Hit the 90% overall goal — hearty congratulations due!</div>');
-    }
-
-    if (latest.status !== "completed" && latest.time_estimate){
-      lines.push('<div class="stat-line" style="color:var(--gray);">Sold time for round ' + latest.round_number + ': ' + esc(latest.time_estimate) + ' (started ' + fmtDate(latest.created_at) + ') — check in and prompt them when ready.</div>');
-    }
-
-    if (latest.status === "completed"){
-      lines.push('<div class="stat-line" style="color:var(--gray);">Round ' + latest.round_number + ' finished ' + fmtDate(latest.completed_at) + '. If they want to keep going, ask about ' + weeks + ' more week' + (weeks === 1 ? "" : "s") + ' and follow up for payment.</div>');
-    }
-
-    card.innerHTML = lines.join("");
-    return card;
-  }
-
-
-    document.getElementById("signoutBtn").addEventListener("click", function(){
-    clearSession();
-    redirectToLogin();
-  });
-
-  init();
+"use strict";
+var SUPABASE_URL = "https://zqcwhsxaawmrckbglcim.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
+var STORAGE_KEY = "bt-session";
+var LOGIN_URL = "index.html";
+
+function loadSession(){
+try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
+catch(e){ return null; }
+}
+function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
+
+function parseHashTokens(){
+var hash = location.hash || "";
+if (hash.indexOf("bt_access_token=") === -1) return null;
+var params = new URLSearchParams(hash.replace(/^#/, ""));
+var at = params.get("bt_access_token");
+var rt = params.get("bt_refresh_token");
+if (!at) return null;
+return { access_token: at, refresh_token: rt };
+}
+
+function redirectToLogin(){
+var returnTo = location.href.split("#")[0];
+location.href = LOGIN_URL + "?return_to=" + encodeURIComponent(returnTo) + "&purpose=training";
+}
+
+function authFetch(path, opts){
+opts = opts || {};
+var session = loadSession();
+var headers = {
+"apikey": SUPABASE_ANON_KEY,
+"Authorization": "Bearer " + ((session && session.access_token) || ""),
+"Content-Type": "application/json"
+};
+if (opts.headers){ for (var k in opts.headers){ headers[k] = opts.headers[k]; } }
+opts.headers = headers;
+return fetch(SUPABASE_URL + path, opts);
+}
+
+var currentUser = null;
+
+function esc(s){
+var d = document.createElement("div");
+d.textContent = (s === null || s === undefined) ? "" : String(s);
+return d.innerHTML;
+}
+
+function fmtDate(iso){
+if (!iso) return "—";
+var d = new Date(iso);
+return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function monthsFromNow(n){
+var d = new Date();
+d.setMonth(d.getMonth() + n);
+return d.toISOString();
+}
+
+// ---------- init / auth ----------
+
+function init(){
+var fromHash = parseHashTokens();
+if (fromHash){
+saveSession(fromHash);
+history.replaceState(null, "", location.pathname + location.search);
+}
+var session = loadSession();
+if (!session || !session.access_token){
+redirectToLogin();
+return;
+}
+authFetch("/auth/v1/user").then(function(res){
+if (!res.ok){ redirectToLogin(); return; }
+return res.json().then(function(user){
+currentUser = user;
+return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=is_admin,full_name,email");
+});
+}).then(function(res){
+if (!res) return;
+return res.json();
+}).then(function(rows){
+if (!rows) return;
+var profile = rows[0];
+if (!profile || !profile.is_admin){
+document.getElementById("gate").classList.add("hidden");
+document.getElementById("denied").classList.remove("hidden");
+return;
+}
+document.getElementById("whoami").textContent = "Signed in as " + (profile.email || currentUser.email || "");
+document.getElementById("gate").classList.add("hidden");
+document.getElementById("app").classList.remove("hidden");
+loadAll();
+}).catch(function(){
+document.getElementById("gate").textContent = "Something went wrong checking your access. Please refresh.";
+});
+}
+
+function loadAll(){
+loadSubscriptionRequests();
+loadClarityResults();
+loadPendingAndRoster();
+loadVocabTraining();
+loadVocabProgress();
+// couponPanel needs no initial load
+}
+
+// ---------- subscription requests (from placement/diagnostic results screens) ----------
+
+var SUB_TRACK_LABELS = { vocabulary: "Vocabulary", grammar: "Grammar", language_clarity: "Language Clarity" };
+
+function loadSubscriptionRequests(){
+authFetch("/rest/v1/subscription_requests?status=eq.pending&select=id,user_id,email,full_name,track,requested_at&order=requested_at.asc").then(function(r){ return r.ok ? r.json() : []; }).then(renderSubscriptionRequests);
+}
+
+function renderSubscriptionRequests(rows){
+var tbody = document.querySelector("#subTable tbody");
+tbody.innerHTML = "";
+rows = rows || [];
+document.getElementById("subEmpty").classList.toggle("hidden", rows.length > 0);
+rows.forEach(function(req){
+var tr = document.createElement("tr");
+var tdName = document.createElement("td"); tdName.textContent = req.full_name || "—";
+var tdEmail = document.createElement("td"); tdEmail.textContent = req.email || "—";
+var tdTrack = document.createElement("td"); tdTrack.textContent = SUB_TRACK_LABELS[req.track] || req.track || "—";
+var tdWhen = document.createElement("td"); tdWhen.textContent = fmtDate(req.requested_at);
+var tdAction = document.createElement("td");
+var btn = document.createElement("button");
+btn.className = "btn";
+btn.textContent = "Mark invoiced";
+btn.addEventListener("click", function(){
+btn.disabled = true; btn.textContent = "Saving…";
+markInvoiced(req, function(ok, err){
+if (ok){
+loadSubscriptionRequests();
+} else {
+btn.disabled = false; btn.textContent = "Mark invoiced";
+alert(err || "Something went wrong.");
+}
+});
+});
+tdAction.appendChild(btn);
+tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdTrack); tr.appendChild(tdWhen); tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+}
+
+function markInvoiced(req, cb){
+authFetch("/rest/v1/subscription_requests?id=eq." + encodeURIComponent(req.id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ status: "invoiced", invoiced_at: new Date().toISOString() })
+}).then(function(res){
+if (res.ok) { cb(true); }
+else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
+}).catch(function(){ cb(false, "Network error."); });
+}
+
+// ---------- Language Clarity (phonetic assessment) submitted recordings ----------
+
+function loadClarityResults(){
+authFetch("/rest/v1/language_clarity_results?select=id,student_name,email,recording_path,session_date,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }).then(renderClarityResults).catch(function(){ renderClarityResults([]); });
+}
+
+function renderClarityResults(rows){
+var tbody = document.querySelector("#clarityTable tbody");
+tbody.innerHTML = "";
+rows = rows || [];
+document.getElementById("clarityEmpty").classList.toggle("hidden", rows.length > 0);
+rows.forEach(function(row){
+var tr = document.createElement("tr");
+var tdName = document.createElement("td"); tdName.textContent = row.student_name || "—";
+var tdEmail = document.createElement("td"); tdEmail.textContent = row.email || "—";
+var tdWhen = document.createElement("td"); tdWhen.textContent = row.session_date ? fmtDate(row.session_date) : fmtDate(row.created_at);
+var tdAction = document.createElement("td");
+if (row.recording_path){
+var btn = document.createElement("button");
+btn.className = "btn secondary";
+btn.textContent = "Get link";
+var msg = document.createElement("div");
+msg.className = "row-msg";
+btn.addEventListener("click", function(){
+btn.disabled = true; btn.textContent = "Signing…"; msg.textContent = "";
+getRecordingSignedUrl(row.recording_path).then(function(url){
+btn.disabled = false; btn.textContent = "Get link";
+if (url){
+window.open(url, "_blank");
+} else {
+msg.style.color = "var(--bad)";
+msg.textContent = "Couldn't get a link.";
+}
+});
+});
+tdAction.appendChild(btn);
+tdAction.appendChild(msg);
+} else {
+tdAction.textContent = "—";
+}
+tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdWhen); tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+}
+
+function getRecordingSignedUrl(path){
+return authFetch("/storage/v1/object/sign/recordings/" + path, {
+method: "POST",
+body: JSON.stringify({ expiresIn: 3600 })
+}).then(function(res){ return res.ok ? res.json() : null; }).then(function(data){
+if (!data || !data.signedURL) return null;
+return SUPABASE_URL + "/storage/v1" + data.signedURL;
+}).catch(function(){ return null; });
+}
+
+// ---------- shared data load (profiles + access_grants), feeds pending / roster / renewals / trainers ----------
+
+function loadPendingAndRoster(){
+Promise.all([
+authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin,is_trainer,trainer_id&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/access_grants?select=id,user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/coupon_codes?select=code,redeemed_by,redeemed_at&redeemed_by=not.is.null&order=redeemed_at.desc").then(function(r){ return r.ok ? r.json() : []; })
+]).then(function(results){
+var profiles = results[0] || [];
+var grants = results[1] || [];
+var codes = results[2] || [];
+var grantsByUser = {};
+grants.forEach(function(g){
+// keep the most-recently-expiring grant per user (list is already sorted desc)
+if (!grantsByUser[g.user_id]) grantsByUser[g.user_id] = g;
+});
+var codeByUser = {};
+codes.forEach(function(c){
+// keep the most-recently-redeemed code per user (list is already sorted desc)
+if (!codeByUser[c.redeemed_by]) codeByUser[c.redeemed_by] = c;
+});
+renderTrainers(profiles);
+renderRoster(profiles, grantsByUser, codeByUser);
+renderPending(profiles, grantsByUser);
+renderRenewals(profiles, grantsByUser);
+}).catch(function(){
+document.getElementById("rosterTable").querySelector("tbody").innerHTML = "";
+});
+}
+
+// ---------- trainers ----------
+
+function renderTrainers(profiles){
+var trainers = profiles.filter(function(p){ return p.is_trainer; });
+var tbody = document.querySelector("#trainersTable tbody");
+tbody.innerHTML = "";
+document.getElementById("trainersEmpty").classList.toggle("hidden", trainers.length > 0);
+trainers.forEach(function(t){
+var count = profiles.filter(function(p){ return p.trainer_id === t.id; }).length;
+var tr = document.createElement("tr");
+var tdName = document.createElement("td"); tdName.textContent = t.full_name || "—";
+var tdEmail = document.createElement("td"); tdEmail.textContent = t.email || "—";
+var tdCount = document.createElement("td"); tdCount.textContent = String(count);
+var tdAction = document.createElement("td");
+var btn = document.createElement("button");
+btn.className = "mini-btn";
+btn.textContent = "Remove trainer access";
+btn.addEventListener("click", function(){
+if (count > 0 && !confirm("This trainer still has " + count + " student(s) assigned. Remove trainer access anyway? (The students stay assigned to them behind the scenes — reassign them in the Roster first if you want to hand them to someone else.)")) return;
+btn.disabled = true; btn.textContent = "Removing…";
+authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(t.id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ is_trainer: false })
+}).then(function(res){
+if (res.ok){ loadPendingAndRoster(); }
+else { btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Something went wrong."); }
+}).catch(function(){ btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Network error."); });
+});
+tdAction.appendChild(btn);
+tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCount); tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+
+var select = document.getElementById("promoteTrainerSelect");
+var promoteBtn = document.getElementById("promoteTrainerBtn");
+var eligible = profiles.filter(function(p){ return !p.is_trainer; });
+select.innerHTML = "";
+if (!eligible.length){
+var opt = document.createElement("option");
+opt.textContent = "No eligible accounts";
+opt.disabled = true;
+select.appendChild(opt);
+promoteBtn.disabled = true;
+} else {
+promoteBtn.disabled = false;
+eligible.forEach(function(p){
+var o = document.createElement("option");
+o.value = p.id;
+var label = p.full_name || p.email || p.id;
+if (p.email && p.full_name) label += " (" + p.email + ")";
+if (p.is_admin) label += " — admin";
+o.textContent = label;
+select.appendChild(o);
+});
+}
+}
+
+document.getElementById("promoteTrainerBtn").addEventListener("click", function(){
+var select = document.getElementById("promoteTrainerSelect");
+var msg = document.getElementById("trainerMsg");
+var id = select.value;
+if (!id) return;
+var btn = document.getElementById("promoteTrainerBtn");
+btn.disabled = true; btn.textContent = "Saving…"; msg.textContent = "";
+authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ is_trainer: true })
+}).then(function(res){
+btn.disabled = false; btn.textContent = "Make trainer";
+if (res.ok){
+msg.style.color = "var(--ok)";
+msg.textContent = "Done.";
+loadPendingAndRoster();
+} else {
+msg.style.color = "var(--bad)";
+msg.textContent = "Something went wrong.";
+}
+}).catch(function(){
+btn.disabled = false; btn.textContent = "Make trainer";
+msg.style.color = "var(--bad)";
+msg.textContent = "Network error.";
+});
+});
+
+function statusPillHtml(grant){
+var now = new Date();
+if (!grant) return '<span class="pill none">No access</span>';
+if (grant.status === "active" && grant.expires_at && new Date(grant.expires_at) > now){
+return '<span class="pill active">Active</span>';
+}
+if (grant.status === "pending"){
+return '<span class="pill pending">Pending</span>';
+}
+return '<span class="pill expired">Expired</span>';
+}
+
+function renderRoster(profiles, grantsByUser, codeByUser){
+var tbody = document.querySelector("#rosterTable tbody");
+tbody.innerHTML = "";
+var trainers = profiles.filter(function(p){ return p.is_trainer; });
+var students = profiles.filter(function(p){ return !p.is_admin && !p.is_trainer; });
+students.forEach(function(p){
+var grant = grantsByUser[p.id];
+var code = codeByUser ? codeByUser[p.id] : null;
+var tr = document.createElement("tr");
+tr.innerHTML =
+"<td>" + esc(p.full_name || "—") + "</td>" +
+"<td>" + esc(p.email || "—") + "</td>" +
+"<td>" + esc(p.company || "—") + "</td>" +
+"<td>" + esc(p.student_type || "—") + "</td>";
+
+var tdTrainer = document.createElement("td");
+var trainerSelect = document.createElement("select");
+trainerSelect.style.minWidth = "150px";
+var noneOpt = document.createElement("option");
+noneOpt.value = "";
+noneOpt.textContent = "— unassigned —";
+trainerSelect.appendChild(noneOpt);
+trainers.forEach(function(t){
+var o = document.createElement("option");
+o.value = t.id;
+o.textContent = t.full_name || t.email || t.id;
+if (p.trainer_id === t.id) o.selected = true;
+trainerSelect.appendChild(o);
+});
+if (!p.trainer_id) noneOpt.selected = true;
+var trainerMsg = document.createElement("div");
+trainerMsg.className = "row-msg";
+trainerSelect.addEventListener("change", function(){
+var val = trainerSelect.value || null;
+trainerSelect.disabled = true;
+trainerMsg.textContent = "";
+authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(p.id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ trainer_id: val })
+}).then(function(res){
+trainerSelect.disabled = false;
+if (res.ok){
+p.trainer_id = val;
+trainerMsg.style.color = "var(--ok)";
+trainerMsg.textContent = "Saved.";
+setTimeout(function(){ trainerMsg.textContent = ""; }, 1500);
+} else {
+trainerMsg.style.color = "var(--bad)";
+trainerMsg.textContent = "Couldn't save.";
+}
+}).catch(function(){
+trainerSelect.disabled = false;
+trainerMsg.style.color = "var(--bad)";
+trainerMsg.textContent = "Network error.";
+});
+});
+tdTrainer.appendChild(trainerSelect);
+tdTrainer.appendChild(trainerMsg);
+tr.appendChild(tdTrainer);
+
+var tdCode = document.createElement("td"); tdCode.textContent = code ? code.code : "—";
+var tdAccess = document.createElement("td"); tdAccess.innerHTML = statusPillHtml(grant);
+var tdExpires = document.createElement("td"); tdExpires.textContent = grant ? fmtDate(grant.expires_at) : "—";
+tr.appendChild(tdCode); tr.appendChild(tdAccess); tr.appendChild(tdExpires);
+
+var tdAction = document.createElement("td");
+if (grant){
+var btn = document.createElement("button");
+btn.className = "btn secondary";
+btn.textContent = "Renew +1 month";
+btn.addEventListener("click", function(){
+btn.disabled = true; btn.textContent = "Renewing…";
+renewGrant(grant, function(ok, err){
+if (ok){
+loadPendingAndRoster();
+} else {
+btn.disabled = false; btn.textContent = "Renew +1 month";
+alert(err || "Something went wrong.");
+}
+});
+});
+tdAction.appendChild(btn);
+} else {
+tdAction.textContent = "—";
+}
+tdAction.appendChild(buildDeleteControl(p));
+tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+}
+
+function buildDeleteControl(profile){
+var holder = document.createElement("div");
+
+var delBtn = document.createElement("button");
+delBtn.className = "mini-btn";
+delBtn.style.borderColor = "var(--bad)";
+delBtn.style.color = "var(--bad)";
+delBtn.textContent = "Delete";
+
+var confirmBox = document.createElement("div");
+confirmBox.className = "hidden";
+confirmBox.style.marginTop = "6px";
+
+var warn = document.createElement("div");
+warn.className = "row-msg";
+warn.style.color = "var(--bad)";
+warn.style.maxWidth = "220px";
+warn.textContent = "Permanently deletes " + (profile.full_name || profile.email || "this student") + " — all results, training history, and their login. Cannot be undone. Type their name or email to confirm:";
+confirmBox.appendChild(warn);
+
+var input = document.createElement("input");
+input.type = "text";
+input.placeholder = profile.full_name || profile.email || "";
+input.style.width = "160px";
+input.style.marginTop = "6px";
+input.style.display = "block";
+confirmBox.appendChild(input);
+
+var btnRow = document.createElement("div");
+btnRow.style.marginTop = "6px";
+
+var confirmBtn = document.createElement("button");
+confirmBtn.className = "mini-btn";
+confirmBtn.style.borderColor = "var(--bad)";
+confirmBtn.style.color = "var(--bad)";
+confirmBtn.textContent = "Confirm delete";
+confirmBtn.disabled = true;
+
+var cancelBtn = document.createElement("button");
+cancelBtn.className = "mini-btn";
+cancelBtn.textContent = "Cancel";
+cancelBtn.style.marginLeft = "6px";
+
+btnRow.appendChild(confirmBtn);
+btnRow.appendChild(cancelBtn);
+confirmBox.appendChild(btnRow);
+
+var msg = document.createElement("div");
+msg.className = "row-msg";
+confirmBox.appendChild(msg);
+
+holder.appendChild(delBtn);
+holder.appendChild(confirmBox);
+
+function matches(){
+var v = input.value.trim().toLowerCase();
+if (!v) return false;
+var name = (profile.full_name || "").trim().toLowerCase();
+var email = (profile.email || "").trim().toLowerCase();
+return (name && v === name) || (email && v === email);
+}
+
+input.addEventListener("input", function(){
+confirmBtn.disabled = !matches();
+});
+input.addEventListener("keydown", function(e){
+if (e.key === "Enter" && matches()) confirmBtn.click();
+});
+
+delBtn.addEventListener("click", function(){
+delBtn.classList.add("hidden");
+confirmBox.classList.remove("hidden");
+input.focus();
+});
+
+cancelBtn.addEventListener("click", function(){
+input.value = "";
+confirmBtn.disabled = true;
+msg.textContent = "";
+confirmBox.classList.add("hidden");
+delBtn.classList.remove("hidden");
+});
+
+confirmBtn.addEventListener("click", function(){
+if (!matches()) return;
+confirmBtn.disabled = true; cancelBtn.disabled = true;
+confirmBtn.textContent = "Deleting…";
+msg.textContent = "";
+authFetch("/functions/v1/delete-student", {
+method: "POST",
+body: JSON.stringify({ user_id: profile.id })
+}).then(function(res){
+return res.json().catch(function(){ return {}; }).then(function(data){
+if (res.ok && data.success){
+msg.style.color = "var(--ok)";
+msg.textContent = "Deleted.";
+setTimeout(loadPendingAndRoster, 700);
+} else {
+confirmBtn.disabled = false; cancelBtn.disabled = false;
+confirmBtn.textContent = "Confirm delete";
+msg.style.color = "var(--bad)";
+msg.textContent = (data && data.error) || "Something went wrong.";
+}
+});
+}).catch(function(){
+confirmBtn.disabled = false; cancelBtn.disabled = false;
+confirmBtn.textContent = "Confirm delete";
+msg.style.color = "var(--bad)";
+msg.textContent = "Network error.";
+});
+});
+
+return holder;
+}
+
+function renewGrant(grant, cb){
+var now = new Date();
+var base = (grant.expires_at && new Date(grant.expires_at) > now) ? new Date(grant.expires_at) : now;
+var newExpiry = new Date(base.getTime());
+newExpiry.setMonth(newExpiry.getMonth() + 1);
+authFetch("/rest/v1/access_grants?id=eq." + encodeURIComponent(grant.id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ expires_at: newExpiry.toISOString() })
+}).then(function(res){
+if (res.ok) { cb(true); }
+else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
+}).catch(function(){ cb(false, "Network error."); });
+}
+
+function renderPending(profiles, grantsByUser){
+var tbody = document.querySelector("#pendingTable tbody");
+tbody.innerHTML = "";
+var pending = profiles.filter(function(p){
+return p.student_type === "corporate_sponsor" && !p.is_admin && !p.is_trainer && !grantsByUser[p.id];
+});
+document.getElementById("pendingEmpty").classList.toggle("hidden", pending.length > 0);
+pending.forEach(function(p){
+var tr = document.createElement("tr");
+var tdName = document.createElement("td"); tdName.textContent = p.full_name || "—";
+var tdEmail = document.createElement("td"); tdEmail.textContent = p.email || "—";
+var tdCompany = document.createElement("td"); tdCompany.textContent = p.company || "—";
+var tdSignedUp = document.createElement("td"); tdSignedUp.textContent = fmtDate(p.created_at);
+
+var tdMonths = document.createElement("td");
+var monthsSel = document.createElement("select");
+[1,3,6,12].forEach(function(m){
+var opt = document.createElement("option");
+opt.value = m; opt.textContent = m + (m === 1 ? " month" : " months");
+if (m === 1) opt.selected = true;
+monthsSel.appendChild(opt);
+});
+tdMonths.appendChild(monthsSel);
+
+var tdAction = document.createElement("td");
+var btn = document.createElement("button");
+btn.className = "btn"; btn.textContent = "Grant access";
+var msg = document.createElement("div"); msg.className = "row-msg";
+btn.addEventListener("click", function(){
+btn.disabled = true; btn.textContent = "Granting…";
+var months = parseInt(monthsSel.value, 10);
+approveSponsor(p, months, function(ok, err){
+if (ok){
+msg.textContent = "Access granted.";
+msg.style.color = "var(--ok)";
+btn.textContent = "Granted";
+setTimeout(loadPendingAndRoster, 800);
+} else {
+btn.disabled = false; btn.textContent = "Grant access";
+msg.textContent = err || "Something went wrong.";
+msg.style.color = "var(--bad)";
+}
+});
+});
+tdAction.appendChild(btn);
+tdAction.appendChild(msg);
+
+tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCompany);
+tr.appendChild(tdSignedUp); tr.appendChild(tdMonths); tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+}
+
+function approveSponsor(profile, months, cb){
+var body = {
+user_id: profile.id,
+student_type: "corporate_sponsor",
+sponsor_org: profile.company || null,
+status: "active",
+starts_at: new Date().toISOString(),
+expires_at: monthsFromNow(months),
+granted_by: currentUser.id
+};
+authFetch("/rest/v1/access_grants", {
+method: "POST",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify(body)
+}).then(function(res){
+if (res.ok) { cb(true); }
+else { res.json().catch(function(){ return {}; }).then(function(e){ cb(false, e && e.message); }); }
+}).catch(function(){ cb(false, "Network error."); });
+}
+
+function renderRenewals(profiles, grantsByUser){
+var tbody = document.querySelector("#renewalsTable tbody");
+tbody.innerHTML = "";
+var now = new Date();
+var soon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+var profileById = {};
+profiles.forEach(function(p){ profileById[p.id] = p; });
+
+var due = Object.keys(grantsByUser).map(function(uid){
+return { profile: profileById[uid], grant: grantsByUser[uid] };
+}).filter(function(row){
+if (!row.profile || !row.grant) return false;
+if (row.profile.is_admin || row.profile.is_trainer) return false;
+if (row.grant.status !== "active") return false;
+var exp = new Date(row.grant.expires_at);
+return exp > now && exp <= soon;
+}).sort(function(a,b){ return new Date(a.grant.expires_at) - new Date(b.grant.expires_at); });
+
+document.getElementById("renewalsEmpty").classList.toggle("hidden", due.length > 0);
+
+due.forEach(function(row){
+var p = row.profile, g = row.grant;
+var tr = document.createElement("tr");
+var tdName = document.createElement("td"); tdName.textContent = p.full_name || "—";
+var tdEmail = document.createElement("td"); tdEmail.textContent = p.email || "—";
+var tdExp = document.createElement("td"); tdExp.textContent = fmtDate(g.expires_at);
+var tdAction = document.createElement("td");
+var btn = document.createElement("button");
+btn.className = "btn secondary"; btn.textContent = "Create reminder draft";
+btn.addEventListener("click", function(){
+btn.disabled = true; btn.textContent = "Preparing…";
+buildReminderMailto(p, g).then(function(url){
+window.open(url, "_blank");
+btn.disabled = false; btn.textContent = "Create reminder draft";
+});
+});
+tdAction.appendChild(btn);
+tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdExp); tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+}
+
+function buildReminderMailto(profile, grant){
+return authFetch("/rest/v1/grammar_diagnostic_results?user_id=eq." + encodeURIComponent(profile.id) + "&select=overall_pct,test_type,created_at&order=created_at.desc&limit=1")
+.then(function(r){ return r.ok ? r.json() : []; })
+.catch(function(){ return []; })
+.then(function(rows){
+var progressLine = "";
+if (rows && rows[0] && rows[0].overall_pct !== null && rows[0].overall_pct !== undefined){
+progressLine = "Last time we checked in, your grammar score was " + Math.round(rows[0].overall_pct) + "% — nice work. ";
+}
+var name = (profile.full_name || "").split(" ")[0] || "there";
+var subject = "Time to renew your Bespoken English training access";
+var body =
+"Hi " + name + ",\n\n" +
+"I wanted to check in on your training with Bespoken English. " + progressLine + "\n\n" +
+"Your access is set to expire on " + fmtDate(grant.expires_at) + ". If you'd like to keep going, just reply to this email and I'll get you set up.\n\n" +
+"Education made just for you.\n\n" +
+"Bespoken English";
+var mailto = "mailto:" + encodeURIComponent(profile.email || "") +
+"?subject=" + encodeURIComponent(subject) +
+"&body=" + encodeURIComponent(body);
+return mailto;
+});
+}
+
+// ---------- coupon generator ----------
+
+function generateCode(){
+var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+var s = "";
+for (var i = 0; i < 6; i++){ s += chars.charAt(Math.floor(Math.random() * chars.length)); }
+return "BE-" + s;
+}
+
+document.getElementById("couponGenBtn").addEventListener("click", function(){
+var btn = document.getElementById("couponGenBtn");
+var msg = document.getElementById("couponMsg");
+var type = document.getElementById("couponType").value;
+var months = parseInt(document.getElementById("couponMonths").value, 10) || 1;
+var email = document.getElementById("couponEmail").value.trim();
+var note = document.getElementById("couponNote").value.trim();
+var code = generateCode();
+
+btn.disabled = true; btn.textContent = "Generating…"; msg.textContent = "";
+
+authFetch("/rest/v1/coupon_codes", {
+method: "POST",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({
+code: code,
+student_type: type,
+grants_months: months,
+issued_to_email: email || null,
+note: note || null,
+created_by: currentUser.id
+})
+}).then(function(res){
+btn.disabled = false; btn.textContent = "Generate code";
+if (res.ok){
+document.getElementById("couponCodeText").textContent = code;
+document.getElementById("couponResult").style.display = "block";
+msg.textContent = "";
+document.getElementById("couponEmail").value = "";
+document.getElementById("couponNote").value = "";
+} else {
+res.json().catch(function(){ return {}; }).then(function(e){
+msg.style.color = "var(--bad)";
+msg.textContent = (e && e.message) || "Couldn't create that code. Please try again.";
+});
+}
+}).catch(function(){
+btn.disabled = false; btn.textContent = "Generate code";
+msg.style.color = "var(--bad)";
+msg.textContent = "Network error.";
+});
+});
+
+document.getElementById("couponCopyBtn").addEventListener("click", function(){
+var text = document.getElementById("couponCodeText").textContent;
+navigator.clipboard.writeText(text).then(function(){
+var btn = document.getElementById("couponCopyBtn");
+var old = btn.textContent;
+btn.textContent = "Copied!";
+setTimeout(function(){ btn.textContent = old; }, 1500);
+});
+});
+
+// ---------- vocabulary training groups (Phase 4) ----------
+
+function vocabPoolFromResults(results){
+// results is the placement_results.results jsonb: { con:{pct,score,total,missed:[...]}, fin:{...}, ... }
+var totalWords = 0;
+var missed = [];
+if (!results) return { totalWords: 0, missed: [] };
+Object.keys(results).forEach(function(cat){
+var c = results[cat];
+if (!c) return;
+totalWords += (c.total || 0);
+(c.missed || []).forEach(function(w){ missed.push({ word: w, category: cat }); });
+});
+return { totalWords: totalWords, missed: missed };
+}
+
+function computeVocabState(preResults, groups){
+var base = vocabPoolFromResults(preResults);
+var status = {}; // word -> 'unassigned' | 'training' | 'mastered' | 'missed'
+base.missed.forEach(function(m){ status[m.word] = { category: m.category, state: 'unassigned' }; });
+var sorted = (groups || []).slice().sort(function(a,b){ return a.round_number - b.round_number; });
+var openGroup = null;
+sorted.forEach(function(g){
+(g.words || []).forEach(function(w){
+status[w.word] = { category: w.category, state: (g.status === 'completed') ? (w.status === 'mastered' ? 'mastered' : 'missed') : 'training' };
+});
+if (g.status !== 'completed') openGroup = g;
+});
+var pool = [];
+var masteredCount = 0;
+Object.keys(status).forEach(function(word){
+var s = status[word];
+if (s.state === 'mastered') masteredCount++;
+if (s.state === 'unassigned' || s.state === 'missed') pool.push({ word: word, category: s.category });
+});
+return { totalWords: base.totalWords, pool: pool, masteredCount: masteredCount, openGroup: openGroup, wordStatus: status };
+}
+
+var vocabCache = null; // { profiles, preByUser, groupsByUser }
+
+function loadVocabTrainingData(){
+return Promise.all([
+authFetch("/rest/v1/profiles?select=id,full_name,email&order=full_name.asc").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/placement_results?user_id=not.is.null&test_type=eq.pre&select=user_id,results,created_at&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/vocab_training_groups?select=*&order=round_number.asc").then(function(r){ return r.ok ? r.json() : []; })
+]).then(function(results){
+var profiles = results[0] || [];
+var preRows = results[1] || [];
+var groupRows = results[2] || [];
+var preByUser = {};
+preRows.forEach(function(row){ if (!preByUser[row.user_id]) preByUser[row.user_id] = row; }); // most recent pre-test per user
+var groupsByUser = {};
+groupRows.forEach(function(g){
+if (!groupsByUser[g.user_id]) groupsByUser[g.user_id] = [];
+groupsByUser[g.user_id].push(g);
+});
+vocabCache = { profiles: profiles, preByUser: preByUser, groupsByUser: groupsByUser };
+return vocabCache;
+});
+}
+
+function loadVocabTraining(){
+var body = document.getElementById("vocabTrainingBody");
+loadVocabTrainingData().then(function(cache){
+var studentsWithPre = cache.profiles.filter(function(p){ return cache.preByUser[p.id]; });
+if (!studentsWithPre.length){
+body.innerHTML = '<div class="empty">No students have a vocabulary pre-test tied to their account yet (needs user_id on placement_results).</div>';
+return;
+}
+body.innerHTML = "";
+studentsWithPre.forEach(function(p){
+body.appendChild(renderStudentVocabBlock(p, cache));
+});
+}).catch(function(){
+body.innerHTML = '<div class="empty">Couldn\'t load vocabulary training data.</div>';
+});
+}
+
+function renderStudentVocabBlock(profile, cache){
+var preRow = cache.preByUser[profile.id];
+var groups = cache.groupsByUser[profile.id] || [];
+var state = computeVocabState(preRow.results, groups);
+
+var wrap = document.createElement("div");
+wrap.className = "student-block";
+
+var head = document.createElement("div");
+head.className = "student-head";
+head.innerHTML =
+'<div><span class="sname">' + esc(profile.full_name || profile.email || "—") + '</span> ' +
+'<span class="smeta">' + esc(profile.email || "") + '</span></div>' +
+'<div class="smeta">' + state.masteredCount + ' / ' + state.totalWords + ' words mastered</div>';
+wrap.appendChild(head);
+
+if (state.openGroup){
+var openNote = document.createElement("div");
+openNote.className = "stat-line";
+openNote.textContent = "Round " + state.openGroup.round_number + " is currently in training (" + (state.openGroup.words || []).length + " words" + (state.openGroup.time_estimate ? ", sold: " + state.openGroup.time_estimate : "") + ") — record results below before starting a new group.";
+wrap.appendChild(openNote);
+} else if (state.pool.length){
+wrap.appendChild(renderCreateGroupForm(profile, state, groups));
+} else {
+var doneNote = document.createElement("div");
+doneNote.className = "stat-line";
+doneNote.textContent = "No missed words waiting in the pool right now.";
+wrap.appendChild(doneNote);
+}
+
+groups.slice().sort(function(a,b){ return b.round_number - a.round_number; }).forEach(function(g){
+wrap.appendChild(renderGroupCard(profile, g));
+});
+
+return wrap;
+}
+
+function renderCreateGroupForm(profile, state, existingGroups){
+var box = document.createElement("div");
+var poolLabel = document.createElement("div");
+poolLabel.className = "stat-line";
+poolLabel.textContent = "Missed-word pool (" + state.pool.length + " words, all categories):";
+box.appendChild(poolLabel);
+
+var poolDiv = document.createElement("div");
+poolDiv.className = "word-pool";
+state.pool.forEach(function(item){
+var chip = document.createElement("label");
+chip.className = "word-chip";
+var cb = document.createElement("input");
+cb.type = "checkbox"; cb.checked = true; cb.value = item.word; cb.setAttribute("data-cat", item.category);
+chip.appendChild(cb);
+var txt = document.createElement("span");
+txt.textContent = item.word + " (" + item.category + ")";
+chip.appendChild(txt);
+poolDiv.appendChild(chip);
+});
+box.appendChild(poolDiv);
+
+var formRow = document.createElement("div");
+formRow.className = "form-grid";
+var estField = document.createElement("div");
+estField.className = "field";
+estField.innerHTML = 'Time sold (free text)<input type="text" placeholder="e.g. 3 hours over 2 weeks" style="width:220px;">';
+formRow.appendChild(estField);
+var btn = document.createElement("button");
+btn.className = "btn"; btn.textContent = "Create training group";
+formRow.appendChild(btn);
+var msg = document.createElement("div");
+msg.className = "row-msg";
+box.appendChild(formRow);
+box.appendChild(msg);
+
+btn.addEventListener("click", function(){
+var checked = Array.prototype.slice.call(poolDiv.querySelectorAll("input[type=checkbox]:checked"));
+if (!checked.length){ msg.style.color = "var(--bad)"; msg.textContent = "Select at least one word."; return; }
+var words = checked.map(function(cb){ return { word: cb.value, category: cb.getAttribute("data-cat"), status: "training" }; });
+var nextRound = existingGroups.reduce(function(m,g){ return Math.max(m, g.round_number); }, 0) + 1;
+var estInput = estField.querySelector("input");
+btn.disabled = true; btn.textContent = "Creating…";
+authFetch("/rest/v1/vocab_training_groups", {
+method: "POST",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({
+user_id: profile.id,
+round_number: nextRound,
+words: words,
+time_estimate: estInput.value.trim() || null,
+status: "assigned"
+})
+}).then(function(res){
+if (res.ok){
+msg.style.color = "var(--ok)"; msg.textContent = "Group created.";
+setTimeout(loadVocabTraining, 700);
+} else {
+btn.disabled = false; btn.textContent = "Create training group";
+res.json().catch(function(){ return {}; }).then(function(e){
+msg.style.color = "var(--bad)"; msg.textContent = (e && e.message) || "Something went wrong.";
+});
+}
+}).catch(function(){
+btn.disabled = false; btn.textContent = "Create training group";
+msg.style.color = "var(--bad)"; msg.textContent = "Network error.";
+});
+});
+
+return box;
+}
+
+function renderGroupCard(profile, group){
+var card = document.createElement("div");
+card.className = "group-card";
+var words = group.words || [];
+var top = document.createElement("div");
+top.className = "gc-top";
+var statusBadge = "";
+if (group.status === "completed"){
+statusBadge = '<span class="badge ' + (group.post_test_pct >= 85 ? "pass" : "fail") + '">' + Math.round(group.post_test_pct || 0) + '% on post-test</span>';
+} else {
+statusBadge = '<span class="badge training">In training</span>';
+}
+top.innerHTML =
+'<div><b>Round ' + group.round_number + '</b> — ' + words.length + ' words' +
+(group.time_estimate ? ' · sold: ' + esc(group.time_estimate) : '') +
+' · created ' + fmtDate(group.created_at) + '</div>' +
+'<div>' + statusBadge + '</div>';
+card.appendChild(top);
+
+if (group.status !== "completed"){
+var waitNote = document.createElement("div");
+waitNote.className = "stat-line";
+waitNote.style.color = "var(--gray)";
+waitNote.style.marginTop = "8px";
+waitNote.textContent = "Waiting on the student to take their auto-graded post-test.";
+card.appendChild(waitNote);
+} else {
+var stillMissed = words.filter(function(w){ return w.status !== "mastered"; }).map(function(w){ return w.word; });
+if (stillMissed.length){
+var missedLine = document.createElement("div");
+missedLine.className = "stat-line";
+missedLine.style.color = "var(--gray)";
+missedLine.textContent = "Still missed: " + stillMissed.join(", ");
+card.appendChild(missedLine);
+}
+}
+return card;
+}
+
+// ---------- vocabulary progress & payment report ----------
+
+function loadVocabProgress(){
+var body = document.getElementById("vocabProgressBody");
+var dataPromise = vocabCache ? Promise.resolve(vocabCache) : loadVocabTrainingData();
+dataPromise.then(function(cache){
+var rows = [];
+cache.profiles.forEach(function(p){
+var preRow = cache.preByUser[p.id];
+if (!preRow) return;
+var groups = cache.groupsByUser[p.id] || [];
+if (!groups.length) return;
+var state = computeVocabState(preRow.results, groups);
+var latest = groups.slice().sort(function(a,b){ return b.round_number - a.round_number; })[0];
+rows.push({ profile: p, state: state, latest: latest });
+});
+if (!rows.length){
+body.innerHTML = '<div class="empty">No training groups yet — create one above to start tracking progress.</div>';
+return;
+}
+body.innerHTML = "";
+rows.forEach(function(row){
+body.appendChild(renderProgressRow(row));
+});
+}).catch(function(){
+body.innerHTML = '<div class="empty">Couldn\'t load progress data.</div>';
+});
+}
+
+function renderProgressRow(row){
+var p = row.profile, state = row.state, latest = row.latest;
+var card = document.createElement("div");
+card.className = "group-card";
+
+var target90 = Math.ceil(state.totalWords * 0.9);
+var remaining = Math.max(0, target90 - state.masteredCount);
+var weeks = remaining > 0 ? Math.ceil(remaining / 10) : 0;
+
+var lines = [];
+lines.push('<div class="gc-top"><div><b>' + esc(p.full_name || p.email || "—") + '</b> <span class="smeta">' + esc(p.email || "") + '</span></div>' +
+'<div>' + (latest.status === "completed"
+? '<span class="badge ' + (latest.post_test_pct >= 85 ? "pass" : "fail") + '">Round ' + latest.round_number + ': ' + Math.round(latest.post_test_pct || 0) + '%</span>'
+: '<span class="badge training">Round ' + latest.round_number + ' in training</span>') + '</div></div>');
+
+lines.push('<div class="stat-line">' + state.masteredCount + ' / ' + state.totalWords + ' words mastered overall.</div>');
+
+if (remaining > 0){
+lines.push('<div class="stat-line">Needs ' + remaining + ' more mastered words to reach 90% overall — about ' + weeks + ' week' + (weeks === 1 ? "" : "s") + ' at 10 new words/week.</div>');
+} else {
+lines.push('<div class="stat-line" style="color:var(--ok);">Hit the 90% overall goal — hearty congratulations due!</div>');
+}
+
+if (latest.status !== "completed" && latest.time_estimate){
+lines.push('<div class="stat-line" style="color:var(--gray);">Sold time for round ' + latest.round_number + ': ' + esc(latest.time_estimate) + ' (started ' + fmtDate(latest.created_at) + ') — check in and prompt them when ready.</div>');
+}
+
+if (latest.status === "completed"){
+lines.push('<div class="stat-line" style="color:var(--gray);">Round ' + latest.round_number + ' finished ' + fmtDate(latest.completed_at) + '. If they want to keep going, ask about ' + weeks + ' more week' + (weeks === 1 ? "" : "s") + ' and follow up for payment.</div>');
+}
+
+card.innerHTML = lines.join("");
+return card;
+}
+
+document.getElementById("signoutBtn").addEventListener("click", function(){
+clearSession();
+redirectToLogin();
+});
+
+init();
 })();
 </script>
 </body>
