@@ -1,562 +1,552 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bespoken Training</title>
+<style>
+:root{
+--navy:#1E2761; --ice:#CADCFC; --white:#FFFFFF; --gray:#6B7280;
+--red:#C0392B; --green:#2E7D5B; --bg:#12141c; --panel:#1c202c;
+--panel2:#232838; --line:#333a4d; --ink:#eceef4; --ink-dim:#9aa1b8;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Calibri,Arial,sans-serif;min-height:100vh;}
+.wrap{max-width:480px;margin:0 auto;padding:48px 20px 80px;}
+.logo{font-family:Georgia,serif;font-weight:700;color:#e2531e;font-size:22px;margin-bottom:6px;}
+.tag{color:var(--ink-dim);font-size:13px;margin-bottom:32px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px;}
+h1{font-size:22px;margin:0 0 6px;}
+.sub{color:var(--ink-dim);font-size:13.5px;margin:0 0 24px;line-height:1.5;}
+label{display:block;font-size:13px;margin:14px 0 6px;color:var(--ink-dim);}
+input[type=text],input[type=email],input[type=password]{
+width:100%;padding:11px 13px;border-radius:8px;border:1px solid var(--line);
+background:var(--panel2);color:var(--ink);font-size:14.5px;
+}
+input:focus{outline:none;border-color:var(--ice);}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:58px;}
+.pw-toggle{
+position:absolute; right:8px; top:50%; transform:translateY(-50%);
+background:none; border:none; color:var(--ice); font-size:12px; cursor:pointer;
+font-family:inherit; padding:4px 6px;
+}
+.forgot-row{text-align:right; margin-top:8px;}
+.forgot-row a{color:var(--ice); font-size:12.5px; cursor:pointer; text-decoration:underline;}
+.inline-box{margin-top:12px; padding:14px; background:var(--panel2); border:1px solid var(--line); border-radius:8px;}
+.type-choice{display:flex;gap:10px;margin-top:6px;}
+.type-choice label{
+flex:1;margin:0;padding:12px;border:1px solid var(--line);border-radius:8px;
+text-align:center;cursor:pointer;font-size:13px;color:var(--ink);
+}
+.type-choice input{display:none;}
+.type-choice input:checked + span{color:var(--ice);font-weight:600;}
+.type-choice label:has(input:checked){border-color:var(--ice);background:var(--panel2);}
+.btn{
+margin-top:22px;width:100%;padding:13px;border:none;border-radius:9px;
+background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:pointer;
+}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--ink-dim);margin-top:10px;}
+.switch{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-dim);}
+.switch a{color:var(--ice);cursor:pointer;text-decoration:underline;}
+.msg{margin-top:16px;padding:12px 14px;border-radius:8px;font-size:13.5px;line-height:1.5;display:none;}
+.msg.error{background:rgba(192,57,43,.15);color:#ff9d91;border:1px solid var(--red);display:block;}
+.msg.ok{background:rgba(46,125,91,.15);color:#8fe0bb;border:1px solid var(--green);display:block;}
+.status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.signout{font-size:12px;color:var(--ink-dim);cursor:pointer;text-decoration:underline;}
+.access-pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;letter-spacing:.02em;}
+.access-pill.active{background:rgba(46,125,91,.2);color:#8fe0bb;}
+.access-pill.pending{background:rgba(227,168,87,.2);color:#e3a857;}
+.access-pill.none{background:rgba(154,161,184,.15);color:var(--ink-dim);}
+.hidden{display:none;}
+.company-field{display:none;}
+.company-field.show{display:block;}
+.field-hint{font-size:11.5px;color:var(--ink-dim);margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="logo">Bespoken English</div>
+<div class="tag">Bespoken Training &mdash; learn exactly what you need</div>
+
+<!-- ===== Signed-out: auth card ===== -->
+<div class="card" id="authCard">
+<div id="signupView">
+<h1>Create your account</h1>
+<p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere.</p>
+<label for="su-name">Full name</label>
+<input type="text" id="su-name" autocomplete="name">
+<label for="su-email">Email address</label>
+<input type="email" id="su-email" autocomplete="email">
+<label for="su-pw">Password</label>
+<div class="pw-wrap">
+<input type="password" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
+<button type="button" class="pw-toggle" id="su-pw-toggle">Show</button>
+</div>
+<label>How are you enrolling?</label>
+<div class="type-choice">
+<label><input type="radio" name="stype" value="private" checked><span>Private Student</span></label>
+<label><input type="radio" name="stype" value="corporate_sponsor"><span>Corporate Sponsored</span></label>
+</div>
+<div class="company-field" id="companyField">
+<label for="su-company">Company / sponsor name</label>
+<input type="text" id="su-company" placeholder="e.g. Boston Consulting Group">
+<div class="field-hint">We'll use this to match you with your sponsor's approval.</div>
+</div>
+<button class="btn" id="signupBtn">Create account</button>
+<div class="msg" id="signupMsg"></div>
+<div class="switch">Already have an account? <a id="toLogin">Sign in</a></div>
+</div>
+
+<div class="hidden" id="loginView">
+<h1>Sign in</h1>
+<p class="sub">Use the same email and password you created for your assessment.</p>
+<label for="li-email">Email address</label>
+<input type="email" id="li-email" autocomplete="email">
+<label for="li-pw">Password</label>
+<div class="pw-wrap">
+<input type="password" id="li-pw" autocomplete="current-password">
+<button type="button" class="pw-toggle" id="li-pw-toggle">Show</button>
+</div>
+<div class="forgot-row"><a id="forgotLink">Forgot password?</a></div>
+<div class="inline-box hidden" id="forgotBox">
+<label for="forgot-email" style="margin-top:0;">Email address</label>
+<input type="email" id="forgot-email">
+<button class="btn" id="forgotSendBtn" style="margin-top:12px;">Send reset link</button>
+<div class="msg" id="forgotMsg"></div>
+</div>
+<button class="btn" id="loginBtn">Sign in</button>
+<div class="msg" id="loginMsg"></div>
+<div class="switch">Need an account? <a id="toSignup">Create one</a></div>
+</div>
+</div>
+
+<!-- ===== Password recovery ===== -->
+<div class="card hidden" id="recoveryCard">
+<h1>Set a new password</h1>
+<p class="sub">Choose a new password for your account. You'll be signed in automatically once it's saved.</p>
+<label for="rec-pw">New password</label>
+<div class="pw-wrap">
+<input type="password" id="rec-pw" autocomplete="new-password" placeholder="At least 8 characters">
+<button type="button" class="pw-toggle" id="rec-pw-toggle">Show</button>
+</div>
+<label for="rec-pw2">Confirm new password</label>
+<div class="pw-wrap">
+<input type="password" id="rec-pw2" autocomplete="new-password">
+<button type="button" class="pw-toggle" id="rec-pw2-toggle">Show</button>
+</div>
+<button class="btn" id="recoverySaveBtn">Save new password</button>
+<div class="msg" id="recoveryMsg"></div>
+</div>
+
+<!-- ===== Signed-in: dashboard ===== -->
+<div class="card hidden" id="dashCard">
+<div class="status-row">
+<div>Signed in as <strong id="whoami"></strong></div>
+<span class="signout" id="signoutBtn">Sign out</span>
+</div>
+<h1>Your training access</h1>
+<p class="sub" id="accessSummary">Checking your access status&hellip;</p>
+
+<div id="redeemBlock">
+<label for="couponInput">Have a code from your instructor?</label>
+<input type="text" id="couponInput" placeholder="Enter your access code">
+<button class="btn" id="redeemBtn">Redeem code</button>
+<div class="msg" id="redeemMsg"></div>
+</div>
+</div>
+</div>
+
 <script>
 (function(){
 "use strict";
-// ---- Bespoken Training account gate ----
-// Every assessment now requires a free Bespoken Training account first.
-// If we don't already have a session (either stored from a prior visit,
-// or just handed back to us in the URL fragment after signing in), send
-// the visitor to sign up/sign in, then bounce them right back here.
-// TODO: swap LOGIN_URL to https://bespokentraining.com/ once that domain
-// is pointed at the bespoken-training app (it currently still shows the
-// GoDaddy "coming soon" placeholder).
-var STORAGE_KEY = 'bt-session';
-var LOGIN_URL = 'https://bespokenesl-a11y.github.io/bespoken-training/';
 
+// ---- Supabase project config (REST only, no SDK — matches the other
+// Bespoken apps' pattern of hand-rolled fetch calls against PostgREST /
+// GoTrue directly rather than pulling in supabase-js). ----
+var SUPABASE_URL = 'https://zqcwhsxaawmrckbglcim.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_0x-TxeUzQaB1_rsP7bnrRw_jBR9icOD';
+var STORAGE_KEY = 'bt-session';
+
+var qs = new URLSearchParams(location.search);
+var returnTo = qs.get('return_to');
+
+function saveSession(s){
+localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
 function loadSession(){
 try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
 catch(e){ return null; }
 }
-function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
 
-if (location.hash && location.hash.indexOf('bt_access_token=') !== -1) {
-var params = new URLSearchParams(location.hash.slice(1));
-var accessToken = params.get('bt_access_token');
-var refreshToken = params.get('bt_refresh_token');
-if (accessToken) {
-saveSession({ access_token: accessToken, refresh_token: refreshToken, issued_at: Date.now() });
-history.replaceState(null, '', location.pathname + location.search);
-}
-}
-
+async function authFetch(path, opts){
+opts = opts || {};
+var headers = Object.assign({
+'apikey': SUPABASE_ANON_KEY,
+'Content-Type': 'application/json'
+}, opts.headers || {});
 var session = loadSession();
-if (!session || !session.access_token) {
-var returnTo = encodeURIComponent(location.href.split('#')[0]);
-location.href = LOGIN_URL + '?return_to=' + returnTo;
+if(session && session.access_token){
+headers['Authorization'] = 'Bearer ' + session.access_token;
+}
+var res = await fetch(SUPABASE_URL + path, Object.assign({}, opts, {headers: headers}));
+return res;
+}
+
+async function refreshIfNeeded(){
+var s = loadSession();
+if(!s) return null;
+var expiresAt = (s.issued_at || 0) + (s.expires_in || 3600) * 1000;
+if(Date.now() < expiresAt - 60000) return s; // still good for another minute+
+// try a refresh
+try{
+var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+method: 'POST',
+headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+body: JSON.stringify({ refresh_token: s.refresh_token })
+});
+if(!res.ok){ clearSession(); return null; }
+var data = await res.json();
+var newSession = {
+access_token: data.access_token, refresh_token: data.refresh_token,
+expires_in: data.expires_in, issued_at: Date.now(),
+user: data.user
+};
+saveSession(newSession);
+return newSession;
+}catch(e){ clearSession(); return null; }
+}
+
+function showMsg(el, text, isError){
+el.textContent = text;
+el.className = 'msg ' + (isError ? 'error' : 'ok');
+}
+
+// ---- show/hide password toggles ----
+function wireToggle(toggleId, inputId){
+var btn = document.getElementById(toggleId);
+var input = document.getElementById(inputId);
+if (!btn || !input) return;
+btn.addEventListener('click', function(){
+var showing = input.type === 'text';
+input.type = showing ? 'password' : 'text';
+btn.textContent = showing ? 'Show' : 'Hide';
+});
+}
+wireToggle('su-pw-toggle', 'su-pw');
+wireToggle('li-pw-toggle', 'li-pw');
+wireToggle('rec-pw-toggle', 'rec-pw');
+wireToggle('rec-pw2-toggle', 'rec-pw2');
+
+// ---- signup / login view toggle ----
+document.getElementById('toLogin').onclick = function(){
+document.getElementById('signupView').classList.add('hidden');
+document.getElementById('loginView').classList.remove('hidden');
+};
+document.getElementById('toSignup').onclick = function(){
+document.getElementById('loginView').classList.add('hidden');
+document.getElementById('signupView').classList.remove('hidden');
+};
+Array.prototype.forEach.call(document.querySelectorAll('input[name=stype]'), function(r){
+r.onchange = function(){
+document.getElementById('companyField').classList.toggle('show', r.value === 'corporate_sponsor' && r.checked);
+};
+});
+
+// ---- forgot password ----
+document.getElementById('forgotLink').onclick = function(){
+var box = document.getElementById('forgotBox');
+box.classList.toggle('hidden');
+if (!box.classList.contains('hidden')){
+var emailField = document.getElementById('forgot-email');
+if (!emailField.value){
+emailField.value = document.getElementById('li-email').value.trim();
+}
+}
+};
+document.getElementById('forgotSendBtn').onclick = async function(){
+var btn = this;
+var email = document.getElementById('forgot-email').value.trim();
+var msgEl = document.getElementById('forgotMsg');
+if(!email){ showMsg(msgEl, 'Enter your email first.', true); return; }
+btn.disabled = true; btn.textContent = 'Sending…';
+try{
+var redirectTo = location.origin + location.pathname;
+var res = await fetch(SUPABASE_URL + '/auth/v1/recover?redirect_to=' + encodeURIComponent(redirectTo), {
+method: 'POST',
+headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+body: JSON.stringify({ email: email })
+});
+// Supabase returns 200 here regardless of whether the email is registered,
+// by design, so the response can't be used to confirm which emails exist.
+if(res.ok){
+showMsg(msgEl, 'If that email has an account, a reset link is on its way — check your inbox.', false);
+} else {
+showMsg(msgEl, 'Something went wrong sending that. Please try again.', true);
+}
+}catch(e){
+showMsg(msgEl, 'Something went wrong reaching the server.', true);
+}
+btn.disabled = false; btn.textContent = 'Send reset link';
+};
+
+// ---- sign up ----
+document.getElementById('signupBtn').onclick = async function(){
+var btn = this;
+var name = document.getElementById('su-name').value.trim();
+var email = document.getElementById('su-email').value.trim();
+var pw = document.getElementById('su-pw').value;
+var stype = document.querySelector('input[name=stype]:checked').value;
+var company = document.getElementById('su-company').value.trim();
+var msgEl = document.getElementById('signupMsg');
+
+if(!name || !email || pw.length < 8){
+showMsg(msgEl, 'Please enter your name, a valid email, and a password of at least 8 characters.', true);
+return;
+}
+if(stype === 'corporate_sponsor' && !company){
+showMsg(msgEl, 'Please enter your company or sponsor name.', true);
+return;
+}
+
+btn.disabled = true; btn.textContent = 'Creating account…';
+try{
+var res = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+method: 'POST',
+headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+body: JSON.stringify({ email: email, password: pw, data: { full_name: name } })
+});
+var data = await res.json();
+if(!res.ok){
+showMsg(msgEl, data.msg || data.error_description || 'Could not create your account. That email may already be registered.', true);
+btn.disabled = false; btn.textContent = 'Create account';
+return;
+}
+
+// Stash the chosen student_type/company so it can be applied the moment
+// we have an authenticated session — either right now (email confirmation
+// off) or on first login after they confirm (email confirmation on).
+localStorage.setItem('bt-pending-profile', JSON.stringify({ student_type: stype, company: company }));
+
+if(data.access_token){
+// Confirmation is off (or this project auto-confirms) — we're
+// signed in immediately.
+saveSession({
+access_token: data.access_token, refresh_token: data.refresh_token,
+expires_in: data.expires_in, issued_at: Date.now(), user: data.user
+});
+await applyPendingProfile();
+enterDashboard();
+} else {
+showMsg(msgEl, 'Almost there — check ' + email + ' for a confirmation link, then come back and sign in.', false);
+btn.disabled = false; btn.textContent = 'Create account';
+}
+}catch(e){
+showMsg(msgEl, 'Something went wrong reaching the server. Please try again.', true);
+btn.disabled = false; btn.textContent = 'Create account';
+}
+};
+
+// ---- log in ----
+document.getElementById('loginBtn').onclick = async function(){
+var btn = this;
+var email = document.getElementById('li-email').value.trim();
+var pw = document.getElementById('li-pw').value;
+var msgEl = document.getElementById('loginMsg');
+if(!email || !pw){ showMsg(msgEl, 'Enter your email and password.', true); return; }
+
+btn.disabled = true; btn.textContent = 'Signing in…';
+try{
+var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+method: 'POST',
+headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+body: JSON.stringify({ email: email, password: pw })
+});
+var data = await res.json();
+if(!res.ok){
+showMsg(msgEl, data.error_description || 'Incorrect email or password.', true);
+btn.disabled = false; btn.textContent = 'Sign in';
+return;
+}
+saveSession({
+access_token: data.access_token, refresh_token: data.refresh_token,
+expires_in: data.expires_in, issued_at: Date.now(), user: data.user
+});
+await applyPendingProfile();
+enterDashboard();
+}catch(e){
+showMsg(msgEl, 'Something went wrong reaching the server. Please try again.', true);
+btn.disabled = false; btn.textContent = 'Sign in';
+}
+};
+
+async function applyPendingProfile(){
+var raw = localStorage.getItem('bt-pending-profile');
+if(!raw) return;
+try{
+var pending = JSON.parse(raw);
+var session = loadSession();
+var res = await authFetch('/rest/v1/profiles?id=eq.' + session.user.id, {
+method: 'PATCH',
+headers: { 'Prefer': 'return=minimal' },
+body: JSON.stringify({ student_type: pending.student_type, company: pending.company || null })
+});
+// Only clear the pending marker once the write actually succeeds —
+// otherwise a transient server error silently drops the student's
+// enrollment type/company on the floor and no one finds out.
+if(res.ok){ localStorage.removeItem('bt-pending-profile'); }
+}catch(e){ /* not fatal — will retry applying on next login */ }
+}
+
+document.getElementById('signoutBtn').onclick = function(){
+clearSession();
+location.reload();
+};
+
+document.getElementById('redeemBtn').onclick = async function(){
+var btn = this;
+var code = document.getElementById('couponInput').value.trim();
+var msgEl = document.getElementById('redeemMsg');
+if(!code){ showMsg(msgEl, 'Enter a code first.', true); return; }
+btn.disabled = true; btn.textContent = 'Checking…';
+try{
+var res = await authFetch('/rest/v1/rpc/redeem_coupon', {
+method: 'POST',
+body: JSON.stringify({ p_code: code })
+});
+var rows = await res.json();
+var row = Array.isArray(rows) ? rows[0] : rows;
+if(row && row.success){
+showMsg(msgEl, row.message, false);
+document.getElementById('couponInput').value = '';
+refreshAccessSummary();
+} else {
+showMsg(msgEl, (row && row.message) || 'Could not redeem that code.', true);
+}
+}catch(e){
+showMsg(msgEl, 'Something went wrong reaching the server.', true);
+}
+btn.disabled = false; btn.textContent = 'Redeem code';
+};
+
+async function refreshAccessSummary(){
+var session = loadSession();
+var summaryEl = document.getElementById('accessSummary');
+try{
+var res = await authFetch('/rest/v1/access_grants?user_id=eq.' + session.user.id + '&order=expires_at.desc&select=status,expires_at,student_type');
+var rows = await res.json();
+var active = rows.find(function(r){ return r.status === 'active' && new Date(r.expires_at) > new Date(); });
+var pending = rows.find(function(r){ return r.status === 'pending'; });
+if(active){
+var d = new Date(active.expires_at);
+summaryEl.innerHTML = '<span class="access-pill active">Active</span> &nbsp;Your training access is open through ' + d.toLocaleDateString() + '.';
+} else if(pending){
+summaryEl.innerHTML = '<span class="access-pill pending">Pending approval</span> &nbsp;Your corporate sponsor enrollment is waiting on approval.';
+} else {
+summaryEl.innerHTML = '<span class="access-pill none">No active access</span> &nbsp;Once you\'re approved or redeem a code, your training unlocks here.';
+}
+}catch(e){
+summaryEl.textContent = 'Could not check your access status right now.';
+}
+}
+
+function enterDashboard(){
+var session = loadSession();
+document.getElementById('authCard').classList.add('hidden');
+document.getElementById('recoveryCard').classList.add('hidden');
+document.getElementById('dashCard').classList.remove('hidden');
+document.getElementById('whoami').textContent = (session.user && session.user.email) || '';
+refreshAccessSummary();
+
+// Hand off to whatever assessment sent us here, now that we have a
+// session. Tokens travel in the URL fragment (never sent to the server
+// in a Referer header the way query params can be) and the receiving
+// app is expected to read + immediately strip them from the address bar.
+if(returnTo){
+var url = new URL(returnTo);
+url.hash = 'bt_access_token=' + encodeURIComponent(session.access_token) +
+'&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
+var goBtn = document.createElement('button');
+goBtn.className = 'btn';
+goBtn.style.marginTop = '18px';
+goBtn.textContent = 'Continue';
+goBtn.onclick = function(){ location.href = url.toString(); };
+document.getElementById('dashCard').appendChild(goBtn);
+}
+}
+
+// ---- password recovery (from the "reset password" email link) ----
+function parseRecoveryHash(){
+var hash = location.hash || '';
+if (hash.indexOf('type=recovery') === -1) return null;
+var params = new URLSearchParams(hash.replace(/^#/, ''));
+var at = params.get('access_token');
+if (!at) return null;
+return {
+access_token: at,
+refresh_token: params.get('refresh_token'),
+expires_in: parseInt(params.get('expires_in'), 10) || 3600
+};
+}
+
+var recoveryTokens = parseRecoveryHash();
+
+document.getElementById('recoverySaveBtn').onclick = async function(){
+var btn = this;
+var pw1 = document.getElementById('rec-pw').value;
+var pw2 = document.getElementById('rec-pw2').value;
+var msgEl = document.getElementById('recoveryMsg');
+if (pw1.length < 8){ showMsg(msgEl, 'Password must be at least 8 characters.', true); return; }
+if (pw1 !== pw2){ showMsg(msgEl, "Passwords don't match.", true); return; }
+
+btn.disabled = true; btn.textContent = 'Saving…';
+try{
+var res = await fetch(SUPABASE_URL + '/auth/v1/user', {
+method: 'PUT',
+headers: {
+'apikey': SUPABASE_ANON_KEY,
+'Authorization': 'Bearer ' + recoveryTokens.access_token,
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({ password: pw1 })
+});
+var data = await res.json();
+if(!res.ok){
+showMsg(msgEl, data.msg || data.error_description || 'Could not update your password. The reset link may have expired — request a new one.', true);
+btn.disabled = false; btn.textContent = 'Save new password';
+return;
+}
+saveSession({
+access_token: recoveryTokens.access_token,
+refresh_token: recoveryTokens.refresh_token,
+expires_in: recoveryTokens.expires_in,
+issued_at: Date.now(),
+user: data
+});
+await applyPendingProfile();
+enterDashboard();
+}catch(e){
+showMsg(msgEl, 'Something went wrong reaching the server.', true);
+btn.disabled = false; btn.textContent = 'Save new password';
+}
+};
+
+// ---- boot ----
+if (recoveryTokens){
+history.replaceState(null, '', location.pathname + location.search);
+document.getElementById('authCard').classList.add('hidden');
+document.getElementById('recoveryCard').classList.remove('hidden');
+} else {
+(async function init(){
+var session = await refreshIfNeeded();
+if(session){
+await applyPendingProfile();
+enterDashboard();
 }
 })();
-</script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phonetic Assessment — BespokenEnglish.com</title>
-<style>
-:root {
---navy: #1E2761;
---ice: #CADCFC;
---white: #FFFFFF;
---gray: #6B7280;
---red: #C0392B;
 }
-* { box-sizing: border-box; }
-html, body {
-margin: 0; padding: 0; height: 100%;
-font-family: Calibri, Arial, sans-serif;
-background: var(--white);
-}
-.screen {
-display: none;
-min-height: 100vh;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-padding: 40px 24px;
-text-align: center;
-}
-.screen.active { display: flex; }
-
-/* Directions + Thank-you screens */
-.dark {
-background: var(--navy);
-color: var(--white);
-}
-.dark h1 {
-font-family: Cambria, 'Times New Roman', serif;
-font-size: clamp(28px, 5vw, 44px);
-margin: 0 0 28px 0;
-}
-.dark p {
-font-size: clamp(16px, 2.2vw, 22px);
-max-width: 760px;
-line-height: 1.5;
-margin: 0 0 14px 0;
-}
-.dark p.emph { color: var(--ice); font-weight: bold; }
-.dark p.record-notice {
-margin-top: 22px;
-font-style: italic;
-color: var(--ice);
-font-size: clamp(14px, 1.8vw, 18px);
-}
-
-.name-field {
-margin: 28px 0 8px 0;
-width: 100%;
-max-width: 420px;
-}
-.name-field label {
-display: block;
-text-align: left;
-font-size: 15px;
-margin-bottom: 6px;
-color: var(--ice);
-}
-.name-field input {
-width: 100%;
-padding: 12px 14px;
-font-size: 16px;
-border-radius: 8px;
-border: none;
-outline: none;
-}
-
-.btn {
-margin-top: 30px;
-padding: 14px 34px;
-font-size: 17px;
-font-weight: bold;
-border: none;
-border-radius: 10px;
-background: var(--ice);
-color: var(--navy);
-cursor: pointer;
-box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-}
-.btn:disabled {
-opacity: 0.5;
-cursor: not-allowed;
-}
-.btn:hover:not(:disabled) { filter: brightness(1.05); }
-
-/* Word screens */
-.word-screen { background: var(--white); color: var(--navy); position: relative; }
-.progress {
-position: absolute;
-top: 28px; left: 32px;
-font-size: 14px;
-color: var(--gray);
-}
-.rec-indicator {
-position: absolute;
-top: 28px; right: 32px;
-font-size: 14px;
-color: var(--red);
-font-weight: bold;
-display: flex;
-align-items: center;
-gap: 6px;
-}
-.rec-dot {
-width: 10px; height: 10px;
-border-radius: 50%;
-background: var(--red);
-animation: pulse 1.2s infinite;
-}
-@keyframes pulse {
-0%, 100% { opacity: 1; }
-50% { opacity: 0.3; }
-}
-.word-text {
-font-family: Cambria, 'Times New Roman', serif;
-font-weight: bold;
-font-size: clamp(64px, 14vw, 140px);
-color: var(--navy);
-margin: 0;
-line-height: 1;
-}
-.word-hint {
-margin-top: 22px;
-font-style: italic;
-color: var(--gray);
-font-size: 16px;
-}
-.next-btn {
-position: absolute;
-bottom: 36px; right: 36px;
-padding: 14px 30px;
-font-size: 16px;
-font-weight: bold;
-border: none;
-border-radius: 10px;
-background: var(--navy);
-color: var(--white);
-cursor: pointer;
-box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-}
-.next-btn:hover { filter: brightness(1.15); }
-
-.finish-early {
-position: absolute;
-bottom: 40px; left: 50%;
-transform: translateX(-50%);
-font-size: 13px;
-color: var(--gray);
-text-decoration: underline;
-cursor: pointer;
-background: none;
-border: none;
-}
-.finish-early:hover { color: var(--navy); }
-
-.camera-preview {
-position: absolute;
-bottom: 36px; left: 36px;
-width: 140px; height: 105px;
-border-radius: 8px;
-overflow: hidden;
-background: #000;
-box-shadow: 0 4px 10px rgba(0,0,0,0.35);
-}
-.camera-preview video {
-width: 100%; height: 100%; object-fit: cover;
-transform: scaleX(-1); /* mirror, feels natural */
-}
-
-.status-text {
-font-size: 15px;
-color: var(--ice);
-margin-top: 18px;
-min-height: 20px;
-}
-.error-box {
-margin-top: 20px;
-padding: 14px 18px;
-background: rgba(255,255,255,0.1);
-border-radius: 8px;
-color: #FFD3D3;
-max-width: 600px;
-font-size: 15px;
-display: none;
-}
-.download-link {
-margin-top: 16px;
-color: var(--ice);
-font-size: 14px;
-text-decoration: underline;
-display: none;
-}
-</style>
-</head>
-<body>
-
-<!-- ===================== DIRECTIONS SCREEN ===================== -->
-<div id="screen-directions" class="screen dark active">
-<h1>Phonetic Assessment</h1>
-<p>These words contain all the sounds in American English.</p>
-<p>The results of this assessment will give us a precise list of sounds you need to practice.</p>
-<p class="emph">Say each word TWO TIMES and click next.</p>
-<p class="emph">There are 56 words.</p>
-<p class="record-notice">This assessment will be recorded when you click Start.</p>
-
-<div class="name-field">
-<label for="studentName">Your name (so we can match your results)</label>
-<input type="text" id="studentName" placeholder="First and last name" autocomplete="name">
-</div>
-
-<button class="btn" id="startBtn">Start ▶</button>
-<div class="error-box" id="startError"></div>
-</div>
-
-<!-- ===================== WORD SCREEN (template) ===================== -->
-<div id="screen-word" class="screen word-screen">
-<div class="progress" id="progressText">Word 1 of 56</div>
-<div class="rec-indicator"><span class="rec-dot"></span> REC</div>
-<div class="camera-preview"><video id="cameraPreview" autoplay muted playsinline></video></div>
-<div class="word-text" id="wordText">word</div>
-<div class="word-hint">Say it twice, then click Next</div>
-<button class="next-btn" id="nextBtn">Next ▶</button>
-<button class="finish-early" id="finishEarlyBtn" type="button">End early &amp; save what I have</button>
-</div>
-
-<!-- ===================== THANK YOU / UPLOAD SCREEN ===================== -->
-<div id="screen-thanks" class="screen dark">
-<h1 style="font-size: clamp(22px, 3.5vw, 30px);">Thank you for recording your speech sample.</h1>
-<p>The results will be reviewed by your trainer and they will reach out to you with a customized curriculum to make you a clear, confident speaker.</p>
-<div class="status-text" id="uploadStatus">Saving your recording…</div>
-<a class="download-link" id="downloadLink" href="#" download="assessment-recording.webm">If saving is taking too long, click here to download a backup copy.</a>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
-<script>
-(function () {
-"use strict";
-
-// Recordings upload directly to Supabase Storage using a resumable (TUS
-// protocol) upload — a standard, maintained library instead of the
-// hand-rolled base64/chunking pipeline this used to POST to Google Apps
-// Script + Drive. The anon/publishable key below is safe to expose in
-// client code; a Storage RLS policy on the "recordings" bucket only lets
-// this key INSERT new files, not list, read, or delete anything.
-var SUPABASE_PROJECT_ID = "zqcwhsxaawmrckbglcim";
-// NOTE: this must be the legacy JWT-format anon key (starts with "eyJ..."),
-// not the newer "sb_publishable_..." key. Confirmed by testing directly
-// against the live endpoint: the new-format key gets rejected by the
-// Storage upload API with "Invalid Compact JWS" (it isn't a JWT), while
-// this legacy key works correctly with the resumable/TUS upload endpoint.
-var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
-var SUPABASE_BUCKET = "recordings";
-var SUPABASE_URL = "https://" + SUPABASE_PROJECT_ID + ".supabase.co";
-// Direct storage hostname (not the general project URL) is recommended by
-// Supabase for large-file upload performance.
-var SUPABASE_STORAGE_ENDPOINT = "https://" + SUPABASE_PROJECT_ID + ".storage.supabase.co/storage/v1/upload/resumable";
-
-// ---- session (set by the account-gate script in <head>) ----
-// Used so the finished recording can be tied back to the student's
-// account (user_id/email) in language_clarity_results, not just their
-// typed-in name. Best-effort: if this fails for any reason, the row still
-// gets written with just student_name.
-var BT_STORAGE_KEY = "bt-session";
-var currentUserId = null;
-var currentUserEmail = null;
-
-function loadBtSession(){
-try { return JSON.parse(localStorage.getItem(BT_STORAGE_KEY) || "null"); }
-catch(e){ return null; }
-}
-
-function fetchCurrentUser(){
-var session = loadBtSession();
-if (!session || !session.access_token) return Promise.resolve();
-return fetch(SUPABASE_URL + "/auth/v1/user", {
-headers: {
-"apikey": SUPABASE_ANON_KEY,
-"Authorization": "Bearer " + session.access_token
-}
-}).then(function(res){ return res.ok ? res.json() : null; })
-.then(function(user){
-if (user) {
-currentUserId = user.id || null;
-currentUserEmail = user.email || null;
-}
-}).catch(function(){ /* best-effort, ignore */ });
-}
-fetchCurrentUser();
-
-function saveResultsRow(objectName){
-var body = {
-user_id: currentUserId,
-student_name: studentName,
-email: currentUserEmail,
-recording_path: objectName,
-session_date: new Date().toISOString().slice(0, 10)
-};
-return fetch(SUPABASE_URL + "/rest/v1/language_clarity_results", {
-method: "POST",
-headers: {
-"apikey": SUPABASE_ANON_KEY,
-"Authorization": "Bearer " + SUPABASE_ANON_KEY,
-"Content-Type": "application/json",
-"Prefer": "return=minimal"
-},
-body: JSON.stringify(body)
-});
-}
-
-var WORDS = [
-"pop","cab","boat","read","book","leg","safe","five","van","bath",
-"this","bathe","bus","nose","wish","ship","beige","watch","chair","cage",
-"jump","him","sun","ball","yes","thing","time","or","good","fire",
-"man","zoom","about","girl","cover","ear","our","far","mitten","bottle",
-"wasp","nest","desk","gift","kept","duct","point","hand","sink","belt",
-"cold","milk","fix","cats","beds","genre"
-];
-var TOTAL = WORDS.length;
-
-var screenDirections = document.getElementById("screen-directions");
-var screenWord = document.getElementById("screen-word");
-var screenThanks = document.getElementById("screen-thanks");
-
-var startBtn = document.getElementById("startBtn");
-var startError = document.getElementById("startError");
-var studentNameInput = document.getElementById("studentName");
-var nextBtn = document.getElementById("nextBtn");
-var finishEarlyBtn = document.getElementById("finishEarlyBtn");
-var wordText = document.getElementById("wordText");
-var progressText = document.getElementById("progressText");
-var cameraPreview = document.getElementById("cameraPreview");
-var uploadStatus = document.getElementById("uploadStatus");
-var downloadLink = document.getElementById("downloadLink");
-
-var currentIndex = 0; // 0-based into WORDS
-var mediaStream = null;
-var mediaRecorder = null;
-var recordedChunks = [];
-var studentName = "";
-
-function showScreen(el) {
-[screenDirections, screenWord, screenThanks].forEach(function (s) {
-s.classList.remove("active");
-});
-el.classList.add("active");
-}
-
-function pickMimeType() {
-var candidates = [
-"video/webm;codecs=vp9,opus",
-"video/webm;codecs=vp8,opus",
-"video/webm",
-"video/mp4"
-];
-for (var i = 0; i < candidates.length; i++) {
-if (window.MediaRecorder && MediaRecorder.isTypeSupported(candidates[i])) {
-return candidates[i];
-}
-}
-return "";
-}
-
-function startAssessment() {
-studentName = (studentNameInput.value || "").trim();
-if (!studentName) {
-startError.style.display = "block";
-startError.textContent = "Please enter your name before starting.";
-studentNameInput.focus();
-return;
-}
-startError.style.display = "none";
-startBtn.disabled = true;
-startBtn.textContent = "Requesting camera…";
-
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-.then(function (stream) {
-mediaStream = stream;
-cameraPreview.srcObject = stream;
-
-var mimeType = pickMimeType();
-var options = mimeType ? { mimeType: mimeType } : undefined;
-recordedChunks = [];
-mediaRecorder = new MediaRecorder(stream, options);
-mediaRecorder.ondataavailable = function (e) {
-if (e.data && e.data.size > 0) recordedChunks.push(e.data);
-};
-mediaRecorder.start();
-
-currentIndex = 0;
-renderWord();
-showScreen(screenWord);
-})
-.catch(function (err) {
-startBtn.disabled = false;
-startBtn.textContent = "Start ▶";
-startError.style.display = "block";
-startError.textContent = "We need camera and microphone access to record this assessment. Please allow access and try again. (" + err.message + ")";
-});
-}
-
-function renderWord() {
-wordText.textContent = WORDS[currentIndex];
-progressText.textContent = "Word " + (currentIndex + 1) + " of " + TOTAL;
-nextBtn.textContent = (currentIndex === TOTAL - 1) ? "Finish ▶" : "Next ▶";
-}
-
-function goNext() {
-if (currentIndex < TOTAL - 1) {
-currentIndex++;
-renderWord();
-} else {
-finishAssessment();
-}
-}
-
-function finishAssessment() {
-showScreen(screenThanks);
-
-if (!mediaRecorder) {
-uploadStatus.textContent = "Nothing was recorded.";
-return;
-}
-
-mediaRecorder.onstop = function () {
-if (mediaStream) {
-mediaStream.getTracks().forEach(function (t) { t.stop(); });
-}
-var blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "video/webm" });
-uploadRecording(blob);
-};
-mediaRecorder.stop();
-}
-
-function sanitizeName(s) {
-return (s || "unknown-student").replace(/[^a-zA-Z0-9_-]/g, "_");
-}
-
-function uploadRecording(blob) {
-var localUrl = URL.createObjectURL(blob);
-downloadLink.href = localUrl;
-var ext = (blob.type.indexOf("mp4") > -1) ? "mp4" : "webm";
-var safeName = sanitizeName(studentName);
-downloadLink.setAttribute("download", safeName + "-assessment." + ext);
-
-if (!blob || blob.size === 0) {
-uploadStatus.textContent = "We couldn't capture any recording. Please use the backup download link below and send it to your trainer.";
-downloadLink.style.display = "inline-block";
-return;
-}
-
-var showDownloadTimer = setTimeout(function () {
-downloadLink.style.display = "inline-block";
-}, 20000);
-
-var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-var objectName = safeName + "_" + timestamp + "." + ext;
-
-var upload = new tus.Upload(blob, {
-endpoint: SUPABASE_STORAGE_ENDPOINT,
-retryDelays: [0, 3000, 5000, 10000, 20000],
-headers: {
-authorization: "Bearer " + SUPABASE_ANON_KEY,
-"x-upsert": "true"
-},
-uploadDataDuringCreation: true,
-removeFingerprintOnSuccess: true,
-metadata: {
-bucketName: SUPABASE_BUCKET,
-objectName: objectName,
-contentType: blob.type || "video/webm",
-cacheControl: "3600"
-},
-chunkSize: 6 * 1024 * 1024, // required by Supabase's TUS implementation — do not change
-onError: function (error) {
-clearTimeout(showDownloadTimer);
-uploadStatus.textContent = "We couldn't save your recording automatically. Please use the backup download link below and send it to your trainer.";
-downloadLink.style.display = "inline-block";
-},
-onProgress: function (bytesUploaded, bytesTotal) {
-var pct = Math.round((bytesUploaded / bytesTotal) * 100);
-uploadStatus.textContent = "Saving your recording… (" + pct + "%)";
-},
-onSuccess: function () {
-clearTimeout(showDownloadTimer);
-// The video is safely in Storage at this point. Also record a row so
-// it shows up in Admin — if this second step fails (network blip,
-// etc.) the video itself is still saved; we just log it rather than
-// scare the student with an error after they already saw success.
-saveResultsRow(objectName).then(function(res){
-uploadStatus.textContent = "Your recording has been saved. You're all set!";
-if (!res.ok) { console.error("language_clarity_results insert failed", res.status); }
-}).catch(function(err){
-uploadStatus.textContent = "Your recording has been saved. You're all set!";
-console.error("language_clarity_results insert error", err);
-});
-}
-});
-
-upload.findPreviousUploads().then(function (previousUploads) {
-if (previousUploads.length) {
-upload.resumeFromPreviousUpload(previousUploads[0]);
-}
-upload.start();
-});
-}
-
-startBtn.addEventListener("click", startAssessment);
-nextBtn.addEventListener("click", goNext);
-finishEarlyBtn.addEventListener("click", function () {
-if (confirm("Stop here and save what's been recorded so far?")) {
-finishAssessment();
-}
-});
 })();
 </script>
 </body>
