@@ -146,7 +146,7 @@ border:1px dashed var(--ice); display:none;
 
 <div class="panel" id="couponPanel">
 <h2>Generate a coupon code</h2>
-<p class="desc">Creates a code and shows it here. Nothing is emailed automatically — copy it and send it yourself.</p>
+<p class="desc">Creates a code and shows it here. If you enter an email, a Gmail draft with the code opens automatically for you to review and send — nothing sends itself.</p>
 <div class="form-grid">
 <div class="field">Student type
 <select id="couponType">
@@ -936,6 +936,20 @@ return mailto;
 });
 }
 
+function buildCouponMailto(type, months, email, code){
+var typeLabel = type === "corporate_sponsor" ? "corporate-sponsored" : "private";
+var subject = "Your Bespoken English access code";
+var body =
+"Hi,\n\n" +
+"Here's your access code: " + code + "\n\n" +
+"Log in to your Bespoken English training dashboard and enter it in the \"Have a code from your instructor?\" box to activate your access (" + months + (months === 1 ? " month" : " months") + ", " + typeLabel + ").\n\n" +
+"Learn exactly what you need.\n\n" +
+"Bespoken English";
+return "mailto:" + encodeURIComponent(email || "") +
+"?subject=" + encodeURIComponent(subject) +
+"&body=" + encodeURIComponent(body);
+}
+
 // ---------- coupon generator ----------
 
 function generateCode(){
@@ -973,6 +987,9 @@ if (res.ok){
 document.getElementById("couponCodeText").textContent = code;
 document.getElementById("couponResult").style.display = "block";
 msg.textContent = "";
+if (email){
+window.open(buildCouponMailto(type, months, email, code), "_blank");
+}
 document.getElementById("couponEmail").value = "";
 document.getElementById("couponNote").value = "";
 } else {
