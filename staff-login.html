@@ -38,7 +38,7 @@
     background:var(--navy); border:1px solid var(--line); border-radius:14px; padding:26px 24px;
   }
   label{display:block; font-size:13px; margin:14px 0 6px; color:var(--gray);}
-  input[type=email], input[type=password]{
+  input[type=text], input[type=email], input[type=password]{
     width:100%; padding:11px 13px; border-radius:8px; border:1px solid var(--line);
     background:#1a1c20; color:var(--white); font-size:14.5px; font-family:inherit;
   }
@@ -93,6 +93,24 @@
       </div>
       <button class="btn" id="loginBtn">Sign in</button>
       <div class="msg" id="loginMsg"></div>
+      <div class="switch">Need a trainer account? <a id="toSignupLink">Create one</a></div>
+    </div>
+
+    <div class="hidden" id="signupView">
+      <h1 style="font-size:20px;">Create a trainer account</h1>
+      <p class="sub">This creates your sign-in only. An admin still has to approve you as a trainer from the admin panel before you'll have access to anything here.</p>
+      <label for="su-name">Full name</label>
+      <input type="text" id="su-name" autocomplete="name">
+      <label for="su-email">Email address</label>
+      <input type="email" id="su-email" autocomplete="email">
+      <label for="su-pw">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
+        <button type="button" class="pw-toggle" id="su-pw-toggle">Show</button>
+      </div>
+      <button class="btn" id="signupBtn">Create account</button>
+      <div class="msg" id="signupMsg"></div>
+      <div class="switch">Already have an account? <a id="toLoginLink">Sign in</a></div>
     </div>
   </div>
 
@@ -166,8 +184,19 @@
     });
   }
   wireToggle("li-pw-toggle", "li-pw");
+  wireToggle("su-pw-toggle", "su-pw");
   wireToggle("rec-pw-toggle", "rec-pw");
   wireToggle("rec-pw2-toggle", "rec-pw2");
+
+  // ---- sign-in / sign-up view toggle ----
+  document.getElementById("toSignupLink").addEventListener("click", function(){
+    document.getElementById("formView").classList.add("hidden");
+    document.getElementById("signupView").classList.remove("hidden");
+  });
+  document.getElementById("toLoginLink").addEventListener("click", function(){
+    document.getElementById("signupView").classList.add("hidden");
+    document.getElementById("formView").classList.remove("hidden");
+  });
 
   function routeByRole(profile){
     if (profile && profile.is_admin){
@@ -179,7 +208,7 @@
       document.getElementById("recoveryCard").classList.add("hidden");
       document.getElementById("loginCard").classList.remove("hidden");
       var msgEl = document.getElementById("loginMsg");
-      showMsg(msgEl, "This account doesn't have staff access. If you're a student, use the student sign-in link below.", true);
+      showMsg(msgEl, "This account doesn't have staff access yet. If you just created a trainer account, an admin needs to approve you first. If you're a student, use the student sign-in link below.", true);
       var btn = document.getElementById("loginBtn");
       btn.disabled = false; btn.textContent = "Sign in";
     }
@@ -241,6 +270,58 @@
     }).catch(function(){
       showMsg(msgEl, "Something went wrong reaching the server. Please try again.", true);
       btn.disabled = false; btn.textContent = "Sign in";
+    });
+  });
+
+  // ---- sign up (trainer account only — approval to actually act as a
+  // trainer is granted separately by an admin from the admin panel; this
+  // just creates the login and leaves student_type unset so the account
+  // shows up in the admin's eligible-trainer pool) ----
+  document.getElementById("signupBtn").addEventListener("click", function(){
+    var btn = this;
+    var name = document.getElementById("su-name").value.trim();
+    var email = document.getElementById("su-email").value.trim();
+    var pw = document.getElementById("su-pw").value;
+    var msgEl = document.getElementById("signupMsg");
+    if (!name || !email || pw.length < 8){
+      showMsg(msgEl, "Enter your name, a valid email, and a password of at least 8 characters.", true);
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = "Creating account…"; msgEl.className = "msg";
+
+    fetch(SUPABASE_URL + "/auth/v1/signup", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: pw, data: { full_name: name } })
+    }).then(function(res){
+      return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+    }).then(function(result){
+      if (!result.ok){
+        showMsg(msgEl, result.data.msg || result.data.error_description || "Could not create your account. That email may already be registered.", true);
+        btn.disabled = false; btn.textContent = "Create account";
+        return;
+      }
+      var data = result.data;
+      if (data.access_token){
+        saveSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_in: data.expires_in,
+          issued_at: Date.now(),
+          user: data.user
+        });
+        showMsg(msgEl, "Account created. You're not approved as a trainer yet — let your admin know so they can add you from the admin panel. Once approved, come back and sign in.", false);
+      } else {
+        showMsg(msgEl, "Almost there — check " + email + " for a confirmation link. Once confirmed, let your admin know so they can approve you as a trainer, then come back and sign in.", false);
+      }
+      document.getElementById("su-name").value = "";
+      document.getElementById("su-email").value = "";
+      document.getElementById("su-pw").value = "";
+      btn.disabled = false; btn.textContent = "Create account";
+    }).catch(function(){
+      showMsg(msgEl, "Something went wrong reaching the server. Please try again.", true);
+      btn.disabled = false; btn.textContent = "Create account";
     });
   });
 
