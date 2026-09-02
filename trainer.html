@@ -89,6 +89,12 @@
       <p><a href="index.html">Back to sign in</a></p>
     </div>
 
+    <div id="frozen" class="hidden">
+      <h1>Account frozen</h1>
+      <p>Your trainer access has been frozen. If you think this is a mistake, reach out to your admin.</p>
+      <p><a href="index.html">Back to sign in</a></p>
+    </div>
+
     <div id="app" class="hidden">
       <div class="top-row">
         <div>
@@ -191,7 +197,7 @@
       if (!res.ok){ redirectToLogin(); return; }
       return res.json().then(function(user){
         currentUser = user;
-        return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=is_trainer,full_name,email");
+        return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=is_trainer,full_name,email,trainer_frozen");
       });
     }).then(function(res){
       if (!res) return;
@@ -202,6 +208,11 @@
       if (!profile || !profile.is_trainer){
         document.getElementById("gate").classList.add("hidden");
         document.getElementById("denied").classList.remove("hidden");
+        return;
+      }
+      if (profile.trainer_frozen){
+        document.getElementById("gate").classList.add("hidden");
+        document.getElementById("frozen").classList.remove("hidden");
         return;
       }
       document.getElementById("whoami").textContent = "Signed in as " + (profile.email || currentUser.email || "");
@@ -266,6 +277,10 @@
           Promise.all(students.map(function(s){
             return authFetch("/rest/v1/vocab_training_groups?user_id=eq." + encodeURIComponent(s.id) + "&select=*&order=round_number.asc")
               .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+          })),
+          Promise.all(students.map(function(s){
+            return authFetch("/rest/v1/language_clarity_results?user_id=eq." + encodeURIComponent(s.id) + "&select=id,recording_path,session_date,created_at&order=created_at.desc")
+              .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
           }))
         ]).then(function(all){
           body.innerHTML = "";
@@ -273,8 +288,9 @@
             var grammarRows = all[0][i] || [];
             var preRows = all[1][i] || [];
             var groups = all[2][i] || [];
+            var clarityRows = all[3][i] || [];
             var vocabState = preRows[0] ? computeVocabState(preRows[0].results, groups) : null;
-            body.appendChild(renderStudentBlock(s, grammarRows[0], vocabState));
+            body.appendChild(renderStudentBlock(s, grammarRows[0], vocabState, clarityRows));
           });
         });
       })
@@ -283,7 +299,7 @@
       });
   }
 
-  function renderStudentBlock(student, latestGrammar, vocabState){
+  function renderStudentBlock(student, latestGrammar, vocabState, clarityRows){
     var wrap = document.createElement("div");
     wrap.className = "student-block";
 
@@ -296,11 +312,18 @@
     if (vocabState){
       metaBits.push("Vocab: " + vocabState.masteredCount + " / " + vocabState.totalWords + " mastered");
     }
+    if (clarityRows && clarityRows.length){
+      metaBits.push("Language Clarity: " + clarityRows.length + " recording" + (clarityRows.length === 1 ? "" : "s"));
+    }
     head.innerHTML =
       '<div><span class="sname">' + esc(student.full_name || student.email || "—") + '</span> ' +
       '<span class="smeta">' + esc(student.email || "") + (student.company ? " · " + esc(student.company) : "") + '</span></div>' +
       '<div class="smeta">' + esc(metaBits.join(" · ") || "No results yet") + '</div>';
     wrap.appendChild(head);
+
+    if (clarityRows && clarityRows.length){
+      wrap.appendChild(renderClarityBlock(clarityRows));
+    }
 
     var notesArea = document.createElement("div");
     notesArea.className = "notes-area hidden";
@@ -316,6 +339,45 @@
     });
 
     return wrap;
+  }
+
+  function renderClarityBlock(clarityRows){
+    var box = document.createElement("div");
+    box.style.marginTop = "8px";
+    clarityRows.forEach(function(row){
+      var line = document.createElement("div");
+      line.className = "stat-line";
+      line.textContent = "Language Clarity recording — " + fmtDate(row.session_date || row.created_at) + " ";
+      if (row.recording_path){
+        var btn = document.createElement("button");
+        btn.className = "mini-btn";
+        btn.textContent = "Get link";
+        btn.addEventListener("click", function(){
+          btn.disabled = true; btn.textContent = "Signing…";
+          getRecordingSignedUrl(row.recording_path).then(function(url){
+            btn.disabled = false; btn.textContent = "Get link";
+            if (url){
+              window.open(url, "_blank");
+            } else {
+              alert("Couldn't get a link.");
+            }
+          });
+        });
+        line.appendChild(btn);
+      }
+      box.appendChild(line);
+    });
+    return box;
+  }
+
+  function getRecordingSignedUrl(path){
+    return authFetch("/storage/v1/object/sign/recordings/" + path, {
+      method: "POST",
+      body: JSON.stringify({ expiresIn: 3600 })
+    }).then(function(res){ return res.ok ? res.json() : null; }).then(function(data){
+      if (!data || !data.signedURL) return null;
+      return SUPABASE_URL + "/storage/v1" + data.signedURL;
+    }).catch(function(){ return null; });
   }
 
   function loadNotesInto(container, student){
