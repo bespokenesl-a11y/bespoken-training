@@ -175,14 +175,22 @@ border:1px dashed var(--ice); display:none;
 
 <div class="panel" id="trainersPanel">
 <h2>Trainers</h2>
-<p class="desc">Approved trainers only — the dropdown below only lists accounts that signed up at Staff Login and haven't been promoted yet. Promoting scopes their dashboard to students assigned to them in the Roster below; you keep full visibility of every student regardless. Freeze locks a trainer out immediately without touching their data or their students'. Delete permanently removes their login — their students and all student data stay yours.</p>
+<p class="desc">Add someone's email below to give them permission to sign up as a trainer at Staff Login — that's the only approval step. The moment they sign up with an approved email, they're an active trainer immediately, scoped to students assigned to them in the Roster below; you keep full visibility of every student regardless. Freeze locks a trainer out immediately without touching their data or their students'. Delete permanently removes their login — their students and all student data stay yours.</p>
 <div class="form-grid">
-<div class="field">Promote to trainer
-<select id="promoteTrainerSelect" style="width:240px;"></select>
+<div class="field">Email
+<input type="email" id="approveTrainerEmail" placeholder="trainer@example.com" style="width:220px;">
 </div>
-<button class="btn" id="promoteTrainerBtn">Make trainer</button>
+<div class="field">Name (optional)
+<input type="text" id="approveTrainerName" placeholder="So you recognize them below" style="width:200px;">
 </div>
-<div class="row-msg" id="trainerMsg"></div>
+<button class="btn" id="approveTrainerBtn">Add to approved list</button>
+</div>
+<div class="row-msg" id="approveTrainerMsg"></div>
+<table id="pendingTrainersTable" style="margin-top:16px;">
+<thead><tr><th>Email</th><th>Name</th><th>Added</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="empty hidden" id="pendingTrainersEmpty">No one waiting to sign up right now.</div>
 <table id="trainersTable" style="margin-top:16px;">
 <thead><tr><th>Name</th><th>Email</th><th>Students assigned</th><th>Status</th><th></th></tr></thead>
 <tbody></tbody>
@@ -336,6 +344,7 @@ function loadAll(){
 loadSubscriptionRequests();
 loadClarityResults();
 loadPendingAndRoster();
+loadApprovedTrainers();
 loadVocabTraining();
 loadVocabProgress();
 // couponPanel needs no initial load
@@ -499,28 +508,6 @@ tdAction.appendChild(buildTrainerDeleteControl(t));
 tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCount); tr.appendChild(tdStatus); tr.appendChild(tdAction);
 tbody.appendChild(tr);
 });
-
-var select = document.getElementById("promoteTrainerSelect");
-var promoteBtn = document.getElementById("promoteTrainerBtn");
-var eligible = profiles.filter(function(p){ return !p.is_trainer && !p.is_admin && !p.student_type; });
-select.innerHTML = "";
-if (!eligible.length){
-var opt = document.createElement("option");
-opt.textContent = "No eligible accounts — have them sign up at Staff Login first";
-opt.disabled = true;
-select.appendChild(opt);
-promoteBtn.disabled = true;
-} else {
-promoteBtn.disabled = false;
-eligible.forEach(function(p){
-var o = document.createElement("option");
-o.value = p.id;
-var label = p.full_name || p.email || p.id;
-if (p.email && p.full_name) label += " (" + p.email + ")";
-o.textContent = label;
-select.appendChild(o);
-});
-}
 }
 
 function buildTrainerFreezeControl(trainer){
@@ -660,29 +647,68 @@ msg.textContent = "Network error.";
 return holder;
 }
 
-document.getElementById("promoteTrainerBtn").addEventListener("click", function(){
-var select = document.getElementById("promoteTrainerSelect");
-var msg = document.getElementById("trainerMsg");
-var id = select.value;
-if (!id) return;
-var btn = document.getElementById("promoteTrainerBtn");
-btn.disabled = true; btn.textContent = "Saving…"; msg.textContent = "";
-authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(id), {
-method: "PATCH",
-headers: { "Prefer": "return=minimal" },
-body: JSON.stringify({ is_trainer: true })
+function loadApprovedTrainers(){
+authFetch("/rest/v1/approved_trainer_emails?claimed_by=is.null&select=email,full_name,added_at&order=added_at.desc").then(function(r){ return r.ok ? r.json() : []; }).then(renderPendingTrainers).catch(function(){ renderPendingTrainers([]); });
+}
+
+function renderPendingTrainers(rows){
+var tbody = document.querySelector("#pendingTrainersTable tbody");
+tbody.innerHTML = "";
+rows = rows || [];
+document.getElementById("pendingTrainersEmpty").classList.toggle("hidden", rows.length > 0);
+rows.forEach(function(row){
+var tr = document.createElement("tr");
+var tdEmail = document.createElement("td"); tdEmail.textContent = row.email;
+var tdName = document.createElement("td"); tdName.textContent = row.full_name || "—";
+var tdAdded = document.createElement("td"); tdAdded.textContent = fmtDate(row.added_at);
+var tdAction = document.createElement("td");
+var removeBtn = document.createElement("button");
+removeBtn.className = "mini-btn";
+removeBtn.textContent = "Remove";
+removeBtn.addEventListener("click", function(){
+removeBtn.disabled = true; removeBtn.textContent = "Removing…";
+authFetch("/rest/v1/approved_trainer_emails?email=eq." + encodeURIComponent(row.email), {
+method: "DELETE",
+headers: { "Prefer": "return=minimal" }
 }).then(function(res){
-btn.disabled = false; btn.textContent = "Make trainer";
+if (res.ok){ loadApprovedTrainers(); }
+else { removeBtn.disabled = false; removeBtn.textContent = "Remove"; alert("Something went wrong."); }
+}).catch(function(){ removeBtn.disabled = false; removeBtn.textContent = "Remove"; alert("Network error."); });
+});
+tdAction.appendChild(removeBtn);
+tr.appendChild(tdEmail); tr.appendChild(tdName); tr.appendChild(tdAdded); tr.appendChild(tdAction);
+tbody.appendChild(tr);
+});
+}
+
+document.getElementById("approveTrainerBtn").addEventListener("click", function(){
+var btn = this;
+var emailInput = document.getElementById("approveTrainerEmail");
+var nameInput = document.getElementById("approveTrainerName");
+var msg = document.getElementById("approveTrainerMsg");
+var email = emailInput.value.trim().toLowerCase();
+var name = nameInput.value.trim();
+if (!email){ msg.style.color = "var(--bad)"; msg.textContent = "Enter an email first."; return; }
+btn.disabled = true; btn.textContent = "Adding…"; msg.textContent = "";
+authFetch("/rest/v1/approved_trainer_emails", {
+method: "POST",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ email: email, full_name: name || null, added_by: currentUser.id })
+}).then(function(res){
+btn.disabled = false; btn.textContent = "Add to approved list";
 if (res.ok){
 msg.style.color = "var(--ok)";
-msg.textContent = "Done.";
-loadPendingAndRoster();
+msg.textContent = "Added — they can now sign up as a trainer at Staff Login.";
+emailInput.value = ""; nameInput.value = "";
+loadApprovedTrainers();
 } else {
+res.json().catch(function(){ return {}; }).then(function(e){
 msg.style.color = "var(--bad)";
-msg.textContent = "Something went wrong.";
+msg.textContent = (e && e.message) || "Something went wrong.";
+});
 }
 }).catch(function(){
-btn.disabled = false; btn.textContent = "Make trainer";
+btn.disabled = false; btn.textContent = "Add to approved list";
 msg.style.color = "var(--bad)";
 msg.textContent = "Network error.";
 });
