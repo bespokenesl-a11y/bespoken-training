@@ -1351,11 +1351,7 @@ box.appendChild(top);
 if (state.openRound){
 box.appendChild(renderOpenRoundControl(profile, cat, state.openRound));
 } else if (state.readyForPostTest){
-var readyNote = document.createElement("div");
-readyNote.className = "stat-line";
-readyNote.style.color = "var(--gray)";
-readyNote.textContent = "All words in this category have been through training. The post-test flow isn't wired up on this panel yet — recording it here is coming next.";
-box.appendChild(readyNote);
+box.appendChild(renderPostTestControl(profile, cat, state));
 } else if (state.untrainedPool.length + state.retryPool.length > 0){
 box.appendChild(renderStartRoundControl(profile, cat, state, rounds));
 } else if (!state.postTestTaken){
@@ -1509,6 +1505,78 @@ msg.style.color = "var(--bad)"; msg.textContent = (e && e.message) || "Something
 }).catch(function(){
 btn.disabled = false; btn.textContent = "Save round results";
 msg.style.color = "var(--bad)"; msg.textContent = "Network error.";
+});
+});
+
+return wrap;
+}
+
+function renderPostTestControl(profile, cat, state){
+var wrap = document.createElement("div");
+var note = document.createElement("div");
+note.className = "stat-line";
+note.style.color = "var(--gray)";
+note.textContent = "All words in this category have been through training. Record the post-test score once the student has taken it (same multiple-choice format and word coverage as the pre-test, scored out of 100%).";
+wrap.appendChild(note);
+
+var formRow = document.createElement("div");
+formRow.className = "form-grid";
+var scoreField = document.createElement("div");
+scoreField.className = "field";
+scoreField.innerHTML = 'Post-test score (%)<input type="number" min="0" max="100" step="1" placeholder="e.g. 92" style="width:120px;">';
+formRow.appendChild(scoreField);
+var btn = document.createElement("button");
+btn.className = "btn"; btn.textContent = "Record post-test result";
+formRow.appendChild(btn);
+wrap.appendChild(formRow);
+
+var msg = document.createElement("div");
+msg.className = "row-msg";
+wrap.appendChild(msg);
+
+btn.addEventListener("click", function(){
+var scoreInput = scoreField.querySelector("input");
+var pct = parseFloat(scoreInput.value);
+if (isNaN(pct) || pct < 0 || pct > 100){ msg.style.color = "var(--bad)"; msg.textContent = "Enter a score between 0 and 100."; return; }
+
+btn.disabled = true; btn.textContent = "Saving…";
+var resultsPayload = {};
+resultsPayload[cat] = { pct: pct };
+
+authFetch("/rest/v1/placement_results", {
+method: "POST",
+headers: { "Prefer": "return=representation" },
+body: JSON.stringify({
+username: profile.full_name || profile.email || profile.id,
+user_id: profile.id,
+test_type: "post",
+results: resultsPayload
+})
+}).then(function(res){
+if (!res.ok) return res.json().catch(function(){ return {}; }).then(function(e){ throw new Error((e && e.message) || "Couldn't save the post-test result."); });
+return res.json();
+}).then(function(rows){
+var newRow = Array.isArray(rows) ? rows[0] : rows;
+return authFetch("/rest/v1/vocab_training_groups?id=eq." + state.lastRound.id, {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({
+post_test_pct: pct,
+post_test_result_id: newRow && newRow.id ? newRow.id : null,
+status: "completed",
+completed_at: new Date().toISOString()
+})
+});
+}).then(function(res){
+if (res.ok){
+msg.style.color = "var(--ok)"; msg.textContent = "Saved.";
+setTimeout(loadVocabTraining, 700);
+} else {
+throw new Error("Result was saved but the round couldn't be updated — check vocab_training_groups.");
+}
+}).catch(function(err){
+btn.disabled = false; btn.textContent = "Record post-test result";
+msg.style.color = "var(--bad)"; msg.textContent = (err && err.message) || "Something went wrong.";
 });
 });
 
