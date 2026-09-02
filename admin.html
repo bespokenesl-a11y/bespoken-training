@@ -175,7 +175,7 @@ border:1px dashed var(--ice); display:none;
 
 <div class="panel" id="trainersPanel">
 <h2>Trainers</h2>
-<p class="desc">Staff with their own login who can view and log notes for their assigned students only. Promote an existing account to trainer, then assign students to them in the Roster below. Removing trainer access doesn't delete their login — it just takes away the trainer dashboard.</p>
+<p class="desc">Approved trainers only — the dropdown below only lists accounts that signed up at Staff Login and haven't been promoted yet. Promoting scopes their dashboard to students assigned to them in the Roster below; you keep full visibility of every student regardless. Freeze locks a trainer out immediately without touching their data or their students'. Delete permanently removes their login — their students and all student data stay yours.</p>
 <div class="form-grid">
 <div class="field">Promote to trainer
 <select id="promoteTrainerSelect" style="width:240px;"></select>
@@ -184,7 +184,7 @@ border:1px dashed var(--ice); display:none;
 </div>
 <div class="row-msg" id="trainerMsg"></div>
 <table id="trainersTable" style="margin-top:16px;">
-<thead><tr><th>Name</th><th>Email</th><th>Students assigned</th><th></th></tr></thead>
+<thead><tr><th>Name</th><th>Email</th><th>Students assigned</th><th>Status</th><th></th></tr></thead>
 <tbody></tbody>
 </table>
 <div class="empty hidden" id="trainersEmpty">No trainers yet.</div>
@@ -451,7 +451,7 @@ return SUPABASE_URL + "/storage/v1" + data.signedURL;
 
 function loadPendingAndRoster(){
 Promise.all([
-authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin,is_trainer,trainer_id&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/profiles?select=id,full_name,email,company,student_type,created_at,is_admin,is_trainer,trainer_id,trainer_frozen&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
 authFetch("/rest/v1/access_grants?select=id,user_id,status,expires_at,starts_at&order=expires_at.desc").then(function(r){ return r.ok ? r.json() : []; }),
 authFetch("/rest/v1/coupon_codes?select=code,redeemed_by,redeemed_at&redeemed_by=not.is.null&order=redeemed_at.desc").then(function(r){ return r.ok ? r.json() : []; })
 ]).then(function(results){
@@ -490,6 +490,8 @@ var tr = document.createElement("tr");
 var tdName = document.createElement("td"); tdName.textContent = t.full_name || "—";
 var tdEmail = document.createElement("td"); tdEmail.textContent = t.email || "—";
 var tdCount = document.createElement("td"); tdCount.textContent = String(count);
+var tdStatus = document.createElement("td");
+tdStatus.innerHTML = t.trainer_frozen ? '<span class="pill expired">Frozen</span>' : '<span class="pill active">Active</span>';
 var tdAction = document.createElement("td");
 var btn = document.createElement("button");
 btn.className = "mini-btn";
@@ -507,17 +509,21 @@ else { btn.disabled = false; btn.textContent = "Remove trainer access"; alert("S
 }).catch(function(){ btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Network error."); });
 });
 tdAction.appendChild(btn);
-tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCount); tr.appendChild(tdAction);
+tdAction.appendChild(document.createElement("br"));
+tdAction.appendChild(buildTrainerFreezeControl(t));
+tdAction.appendChild(document.createElement("br"));
+tdAction.appendChild(buildTrainerDeleteControl(t));
+tr.appendChild(tdName); tr.appendChild(tdEmail); tr.appendChild(tdCount); tr.appendChild(tdStatus); tr.appendChild(tdAction);
 tbody.appendChild(tr);
 });
 
 var select = document.getElementById("promoteTrainerSelect");
 var promoteBtn = document.getElementById("promoteTrainerBtn");
-var eligible = profiles.filter(function(p){ return !p.is_trainer; });
+var eligible = profiles.filter(function(p){ return !p.is_trainer && !p.is_admin && !p.student_type; });
 select.innerHTML = "";
 if (!eligible.length){
 var opt = document.createElement("option");
-opt.textContent = "No eligible accounts";
+opt.textContent = "No eligible accounts — have them sign up at Staff Login first";
 opt.disabled = true;
 select.appendChild(opt);
 promoteBtn.disabled = true;
@@ -528,11 +534,147 @@ var o = document.createElement("option");
 o.value = p.id;
 var label = p.full_name || p.email || p.id;
 if (p.email && p.full_name) label += " (" + p.email + ")";
-if (p.is_admin) label += " — admin";
 o.textContent = label;
 select.appendChild(o);
 });
 }
+}
+
+function buildTrainerFreezeControl(trainer){
+var btn = document.createElement("button");
+btn.className = "mini-btn";
+function setLabel(){ btn.textContent = trainer.trainer_frozen ? "Unfreeze" : "Freeze"; }
+setLabel();
+btn.addEventListener("click", function(){
+var freezing = !trainer.trainer_frozen;
+if (freezing && !confirm("Freeze " + (trainer.full_name || trainer.email || "this trainer") + "? They'll be locked out immediately. This doesn't touch their data or their students' — you can unfreeze any time.")) return;
+btn.disabled = true; btn.textContent = freezing ? "Freezing…" : "Unfreezing…";
+authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(trainer.id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ trainer_frozen: freezing })
+}).then(function(res){
+if (res.ok){ loadPendingAndRoster(); }
+else { btn.disabled = false; setLabel(); alert("Something went wrong."); }
+}).catch(function(){ btn.disabled = false; setLabel(); alert("Network error."); });
+});
+return btn;
+}
+
+function buildTrainerDeleteControl(trainer){
+var holder = document.createElement("div");
+holder.style.display = "inline-block";
+
+var delBtn = document.createElement("button");
+delBtn.className = "mini-btn";
+delBtn.style.borderColor = "var(--bad)";
+delBtn.style.color = "var(--bad)";
+delBtn.textContent = "Delete";
+
+var confirmBox = document.createElement("div");
+confirmBox.className = "hidden";
+confirmBox.style.marginTop = "6px";
+
+var warn = document.createElement("div");
+warn.className = "row-msg";
+warn.style.color = "var(--bad)";
+warn.style.maxWidth = "220px";
+warn.textContent = "Permanently deletes " + (trainer.full_name || trainer.email || "this trainer") + "'s login. Their students stay yours — nothing of theirs is touched. Cannot be undone. Type their name or email to confirm:";
+confirmBox.appendChild(warn);
+
+var input = document.createElement("input");
+input.type = "text";
+input.placeholder = trainer.full_name || trainer.email || "";
+input.style.width = "160px";
+input.style.marginTop = "6px";
+input.style.display = "block";
+confirmBox.appendChild(input);
+
+var btnRow = document.createElement("div");
+btnRow.style.marginTop = "6px";
+
+var confirmBtn = document.createElement("button");
+confirmBtn.className = "mini-btn";
+confirmBtn.style.borderColor = "var(--bad)";
+confirmBtn.style.color = "var(--bad)";
+confirmBtn.textContent = "Confirm delete";
+confirmBtn.disabled = true;
+
+var cancelBtn = document.createElement("button");
+cancelBtn.className = "mini-btn";
+cancelBtn.textContent = "Cancel";
+cancelBtn.style.marginLeft = "6px";
+
+btnRow.appendChild(confirmBtn);
+btnRow.appendChild(cancelBtn);
+confirmBox.appendChild(btnRow);
+
+var msg = document.createElement("div");
+msg.className = "row-msg";
+confirmBox.appendChild(msg);
+
+holder.appendChild(delBtn);
+holder.appendChild(confirmBox);
+
+function matches(){
+var v = input.value.trim().toLowerCase();
+if (!v) return false;
+var name = (trainer.full_name || "").trim().toLowerCase();
+var email = (trainer.email || "").trim().toLowerCase();
+return (name && v === name) || (email && v === email);
+}
+
+input.addEventListener("input", function(){
+confirmBtn.disabled = !matches();
+});
+input.addEventListener("keydown", function(e){
+if (e.key === "Enter" && matches()) confirmBtn.click();
+});
+
+delBtn.addEventListener("click", function(){
+delBtn.classList.add("hidden");
+confirmBox.classList.remove("hidden");
+input.focus();
+});
+
+cancelBtn.addEventListener("click", function(){
+input.value = "";
+confirmBtn.disabled = true;
+msg.textContent = "";
+confirmBox.classList.add("hidden");
+delBtn.classList.remove("hidden");
+});
+
+confirmBtn.addEventListener("click", function(){
+if (!matches()) return;
+confirmBtn.disabled = true; cancelBtn.disabled = true;
+confirmBtn.textContent = "Deleting…";
+msg.textContent = "";
+authFetch("/functions/v1/delete-trainer", {
+method: "POST",
+body: JSON.stringify({ user_id: trainer.id })
+}).then(function(res){
+return res.json().catch(function(){ return {}; }).then(function(data){
+if (res.ok && data.success){
+msg.style.color = "var(--ok)";
+msg.textContent = "Deleted.";
+setTimeout(loadPendingAndRoster, 700);
+} else {
+confirmBtn.disabled = false; cancelBtn.disabled = false;
+confirmBtn.textContent = "Confirm delete";
+msg.style.color = "var(--bad)";
+msg.textContent = (data && data.error) || "Something went wrong.";
+}
+});
+}).catch(function(){
+confirmBtn.disabled = false; cancelBtn.disabled = false;
+confirmBtn.textContent = "Confirm delete";
+msg.style.color = "var(--bad)";
+msg.textContent = "Network error.";
+});
+});
+
+return holder;
 }
 
 document.getElementById("promoteTrainerBtn").addEventListener("click", function(){
