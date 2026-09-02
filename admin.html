@@ -493,23 +493,6 @@ var tdCount = document.createElement("td"); tdCount.textContent = String(count);
 var tdStatus = document.createElement("td");
 tdStatus.innerHTML = t.trainer_frozen ? '<span class="pill expired">Frozen</span>' : '<span class="pill active">Active</span>';
 var tdAction = document.createElement("td");
-var btn = document.createElement("button");
-btn.className = "mini-btn";
-btn.textContent = "Remove trainer access";
-btn.addEventListener("click", function(){
-if (count > 0 && !confirm("This trainer still has " + count + " student(s) assigned. Remove trainer access anyway? (The students stay assigned to them behind the scenes — reassign them in the Roster first if you want to hand them to someone else.)")) return;
-btn.disabled = true; btn.textContent = "Removing…";
-authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(t.id), {
-method: "PATCH",
-headers: { "Prefer": "return=minimal" },
-body: JSON.stringify({ is_trainer: false })
-}).then(function(res){
-if (res.ok){ loadPendingAndRoster(); }
-else { btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Something went wrong."); }
-}).catch(function(){ btn.disabled = false; btn.textContent = "Remove trainer access"; alert("Network error."); });
-});
-tdAction.appendChild(btn);
-tdAction.appendChild(document.createElement("br"));
 tdAction.appendChild(buildTrainerFreezeControl(t));
 tdAction.appendChild(document.createElement("br"));
 tdAction.appendChild(buildTrainerDeleteControl(t));
@@ -742,7 +725,9 @@ trainerSelect.appendChild(noneOpt);
 trainers.forEach(function(t){
 var o = document.createElement("option");
 o.value = t.id;
-o.textContent = t.full_name || t.email || t.id;
+var tLabel = t.full_name || t.email || t.id;
+if (t.full_name && t.email) tLabel += " (" + t.email + ")";
+o.textContent = tLabel;
 if (p.trainer_id === t.id) o.selected = true;
 trainerSelect.appendChild(o);
 });
