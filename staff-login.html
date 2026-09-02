@@ -98,7 +98,7 @@
 
     <div class="hidden" id="signupView">
       <h1 style="font-size:20px;">Create a trainer account</h1>
-      <p class="sub">This creates your sign-in only. An admin still has to approve you as a trainer from the admin panel before you'll have access to anything here.</p>
+      <p class="sub">Your admin has to add your email to the approved list before you can sign up here. Once you're approved and you sign up, your trainer access activates immediately — no separate approval step after that.</p>
       <label for="su-name">Full name</label>
       <input type="text" id="su-name" autocomplete="name">
       <label for="su-email">Email address</label>
@@ -204,14 +204,29 @@
     } else if (profile && profile.is_trainer){
       location.href = "trainer.html";
     } else {
-      showChecking(false);
-      document.getElementById("recoveryCard").classList.add("hidden");
-      document.getElementById("loginCard").classList.remove("hidden");
-      var msgEl = document.getElementById("loginMsg");
-      showMsg(msgEl, "This account doesn't have staff access yet. If you just created a trainer account, an admin needs to approve you first. If you're a student, use the student sign-in link below.", true);
-      var btn = document.getElementById("loginBtn");
-      btn.disabled = false; btn.textContent = "Sign in";
+      tryClaimTrainerApproval().then(function(claimed){
+        if (claimed){
+          location.href = "trainer.html";
+          return;
+        }
+        showChecking(false);
+        document.getElementById("recoveryCard").classList.add("hidden");
+        document.getElementById("loginCard").classList.remove("hidden");
+        var msgEl = document.getElementById("loginMsg");
+        showMsg(msgEl, "This account doesn't have staff access. If you're a student, use the student sign-in link below. If you were expecting trainer access, check with your admin that your email has been approved, then try signing up again.", true);
+        var btn = document.getElementById("loginBtn");
+        btn.disabled = false; btn.textContent = "Sign in";
+      });
     }
+  }
+
+  function tryClaimTrainerApproval(){
+    return authFetch("/rest/v1/rpc/claim_trainer_approval", { method: "POST", body: JSON.stringify({}) })
+      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(data){
+        var row = Array.isArray(data) ? data[0] : data;
+        return !!(row && row.success);
+      }).catch(function(){ return false; });
   }
 
   function checkExistingSession(){
@@ -288,37 +303,62 @@
       return;
     }
 
-    btn.disabled = true; btn.textContent = "Creating account…"; msgEl.className = "msg";
+    btn.disabled = true; btn.textContent = "Checking…"; msgEl.className = "msg";
 
-    fetch(SUPABASE_URL + "/auth/v1/signup", {
+    fetch(SUPABASE_URL + "/rest/v1/rpc/is_approved_trainer_email", {
       method: "POST",
       headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email, password: pw, data: { full_name: name } })
-    }).then(function(res){
-      return res.json().then(function(data){ return { ok: res.ok, data: data }; });
-    }).then(function(result){
-      if (!result.ok){
-        showMsg(msgEl, result.data.msg || result.data.error_description || "Could not create your account. That email may already be registered.", true);
+      body: JSON.stringify({ p_email: email })
+    }).then(function(res){ return res.ok ? res.json() : false; }).then(function(approved){
+      if (!approved){
+        showMsg(msgEl, "That email hasn't been approved for trainer sign-up. Ask your admin to add it from the admin panel, then try again.", true);
         btn.disabled = false; btn.textContent = "Create account";
         return;
       }
-      var data = result.data;
-      if (data.access_token){
-        saveSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token,
-          expires_in: data.expires_in,
-          issued_at: Date.now(),
-          user: data.user
-        });
-        showMsg(msgEl, "Account created. You're not approved as a trainer yet — let your admin know so they can add you from the admin panel. Once approved, come back and sign in.", false);
-      } else {
-        showMsg(msgEl, "Almost there — check " + email + " for a confirmation link. Once confirmed, let your admin know so they can approve you as a trainer, then come back and sign in.", false);
-      }
-      document.getElementById("su-name").value = "";
-      document.getElementById("su-email").value = "";
-      document.getElementById("su-pw").value = "";
-      btn.disabled = false; btn.textContent = "Create account";
+
+      btn.textContent = "Creating account…";
+
+      fetch(SUPABASE_URL + "/auth/v1/signup", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: pw, data: { full_name: name } })
+      }).then(function(res){
+        return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+      }).then(function(result){
+        if (!result.ok){
+          showMsg(msgEl, result.data.msg || result.data.error_description || "Could not create your account. That email may already be registered.", true);
+          btn.disabled = false; btn.textContent = "Create account";
+          return;
+        }
+        var data = result.data;
+        if (data.access_token){
+          saveSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_in: data.expires_in,
+            issued_at: Date.now(),
+            user: data.user
+          });
+          showMsg(msgEl, "Account created — activating your trainer access…", false);
+          tryClaimTrainerApproval().then(function(claimed){
+            if (claimed){
+              location.href = "trainer.html";
+            } else {
+              showMsg(msgEl, "Account created, but we couldn't activate trainer access automatically. Ask your admin to check the approved list, then sign back in.", true);
+              btn.disabled = false; btn.textContent = "Create account";
+            }
+          });
+        } else {
+          showMsg(msgEl, "Almost there — check " + email + " for a confirmation link. Once you confirm and sign in, your trainer access will activate automatically.", false);
+          document.getElementById("su-name").value = "";
+          document.getElementById("su-email").value = "";
+          document.getElementById("su-pw").value = "";
+          btn.disabled = false; btn.textContent = "Create account";
+        }
+      }).catch(function(){
+        showMsg(msgEl, "Something went wrong reaching the server. Please try again.", true);
+        btn.disabled = false; btn.textContent = "Create account";
+      });
     }).catch(function(){
       showMsg(msgEl, "Something went wrong reaching the server. Please try again.", true);
       btn.disabled = false; btn.textContent = "Create account";
