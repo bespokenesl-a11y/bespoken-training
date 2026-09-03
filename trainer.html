@@ -224,36 +224,74 @@
     });
   }
 
-  // ---------- vocab helpers (same logic as admin.html, kept in sync) ----------
+  // ---------- vocab helpers (per-category, mirrors admin.html's computeCategoryState) ----------
 
   function vocabPoolFromResults(results){
-    var totalWords = 0;
-    var missed = [];
-    if (!results) return { totalWords: 0, missed: [] };
+    // results is the placement_results.results jsonb: { con:{pct,score,total,missed:[...]}, fin:{...}, ... }
+    var byCategory = {};
+    if (!results) return byCategory;
     Object.keys(results).forEach(function(cat){
       var c = results[cat];
       if (!c) return;
-      totalWords += (c.total || 0);
-      (c.missed || []).forEach(function(w){ missed.push({ word: w, category: cat }); });
+      byCategory[cat] = { total: c.total || 0, missed: (c.missed || []).slice() };
     });
-    return { totalWords: totalWords, missed: missed };
+    return byCategory;
   }
 
-  function computeVocabState(preResults, groups){
-    var base = vocabPoolFromResults(preResults);
-    var status = {};
-    base.missed.forEach(function(m){ status[m.word] = { category: m.category, state: 'unassigned' }; });
-    var sorted = (groups || []).slice().sort(function(a,b){ return a.round_number - b.round_number; });
-    sorted.forEach(function(g){
-      (g.words || []).forEach(function(w){
-        status[w.word] = { category: w.category, state: (g.status === 'completed') ? (w.status === 'mastered' ? 'mastered' : 'missed') : 'training' };
+  // Per-category training state derived from the pre-test's missed words plus that
+  // category's rounds so far. A word gets at most 2 passes (initial + 1 retry).
+  function computeCategoryState(categoryResult, rounds){
+    var missedWords = (categoryResult && categoryResult.missed) || [];
+    var attempts = {}, lastStatus = {}, inOpenRound = {};
+    var sorted = (rounds || []).slice().sort(function(a,b){ return a.round_number - b.round_number; });
+
+    sorted.forEach(function(r){
+      (r.words || []).forEach(function(w){
+        attempts[w.word] = (attempts[w.word] || 0) + 1;
+        if (r.status === "assigned"){
+          inOpenRound[w.word] = true;
+        } else {
+          lastStatus[w.word] = w.status;
+          inOpenRound[w.word] = false;
+        }
       });
     });
-    var masteredCount = 0;
-    Object.keys(status).forEach(function(word){
-      if (status[word].state === 'mastered') masteredCount++;
+
+    var untrainedPool = [], retryPool = [], inProgress = [], masteredCount = 0;
+    missedWords.forEach(function(word){
+      var n = attempts[word] || 0;
+      if (n === 0){ untrainedPool.push(word); return; }
+      if (inOpenRound[word]){ inProgress.push(word); return; }
+      var status = lastStatus[word];
+      if (n === 1 && status !== "correct"){ retryPool.push(word); return; }
+      if (status === "correct") masteredCount++;
     });
-    return { totalWords: base.totalWords, masteredCount: masteredCount };
+
+    var resolvedCount = missedWords.length - untrainedPool.length - retryPool.length - inProgress.length;
+
+    return {
+      totalMissed: missedWords.length,
+      masteredCount: masteredCount,
+      resolvedCount: resolvedCount
+    };
+  }
+
+  // Rolls every category's state up into one summary line for the student list.
+  function computeVocabSummary(preResults, groups){
+    var byCat = vocabPoolFromResults(preResults);
+    var groupsByCategory = {};
+    (groups || []).forEach(function(g){
+      if (!groupsByCategory[g.category]) groupsByCategory[g.category] = [];
+      groupsByCategory[g.category].push(g);
+    });
+    var totalMissed = 0, masteredCount = 0, resolvedCount = 0;
+    Object.keys(byCat).forEach(function(cat){
+      var state = computeCategoryState(byCat[cat], groupsByCategory[cat]);
+      totalMissed += state.totalMissed;
+      masteredCount += state.masteredCount;
+      resolvedCount += state.resolvedCount;
+    });
+    return { totalMissed: totalMissed, masteredCount: masteredCount, resolvedCount: resolvedCount };
   }
 
   // ---------- students ----------
@@ -289,7 +327,7 @@
             var preRows = all[1][i] || [];
             var groups = all[2][i] || [];
             var clarityRows = all[3][i] || [];
-            var vocabState = preRows[0] ? computeVocabState(preRows[0].results, groups) : null;
+            var vocabState = preRows[0] ? computeVocabSummary(preRows[0].results, groups) : null;
             body.appendChild(renderStudentBlock(s, grammarRows[0], vocabState, clarityRows));
           });
         });
@@ -310,7 +348,11 @@
       metaBits.push("Grammar: " + Math.round(latestGrammar.overall_pct) + "%");
     }
     if (vocabState){
-      metaBits.push("Vocab: " + vocabState.masteredCount + " / " + vocabState.totalWords + " mastered");
+      if (vocabState.totalMissed > 0){
+        metaBits.push("Vocab: " + vocabState.resolvedCount + " / " + vocabState.totalMissed + " resolved in training (" + vocabState.masteredCount + " mastered)");
+      } else {
+        metaBits.push("Vocab: no missed words to train");
+      }
     }
     if (clarityRows && clarityRows.length){
       metaBits.push("Language Clarity: " + clarityRows.length + " recording" + (clarityRows.length === 1 ? "" : "s"));
