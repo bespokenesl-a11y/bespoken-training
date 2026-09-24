@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your Clarity Focus — Bespoken English</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<style>
+:root{
+  --navy:#1E2761; --ice:#CADCFC; --white:#FFFFFF; --gray:#9aa1b8;
+  --bg:#12141c; --panel:#1c202c; --panel2:#232838; --line:#333a4d;
+  --ink:#eceef4; --ink-dim:#9aa1b8; --ok:#6fbf73; --warn:#e3a857; --bad:#e2637a;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Calibri,Arial,sans-serif;min-height:100vh;padding:32px 20px 80px;}
+.wrap{max-width:760px;margin:0 auto;}
+.logo{font-family:Georgia,serif;font-weight:700;color:#e2531e;font-size:20px;margin-bottom:4px;}
+.viewas-banner{
+  background:#2a2410; border:1px solid var(--warn); color:var(--warn);
+  border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:20px;
+}
+.viewas-banner a{color:var(--ice);}
+.top-row{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:10px; margin-bottom:6px;}
+h1{font-family:Georgia,serif; font-size:24px; margin:0 0 4px;}
+.sub{color:var(--ink-dim); font-size:14px; margin:0 0 28px;}
+.signout{color:var(--ink-dim); font-size:13px; cursor:pointer; text-decoration:underline;}
+#gate, #denied{text-align:center; padding:80px 20px; color:var(--ice);}
+#denied a{color:var(--ice);}
+.hidden{display:none !important;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px 24px; margin-bottom:22px;}
+.panel h2{margin:0 0 4px; font-size:18px; font-family:Georgia,serif;}
+.panel .desc{color:var(--ink-dim); font-size:13px; margin:0 0 16px; line-height:1.5;}
+.progress-grid{display:flex; gap:14px; flex-wrap:wrap;}
+.progress-stat{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:14px 18px; flex:1; min-width:120px;}
+.progress-stat .n{font-size:26px; font-weight:800; color:var(--ice);}
+.progress-stat .l{font-size:12px; color:var(--ink-dim); margin-top:2px;}
+.round-row{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 0; border-bottom:1px solid var(--line);}
+.round-row:last-child{border-bottom:none;}
+.round-row .rlabel{font-weight:700;}
+.round-row .rmeta{color:var(--ink-dim); font-size:12px;}
+.pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+.pill.active{background:rgba(46,125,91,.2); color:#8fe0bb;}
+.pill.pending_approval{background:rgba(227,168,87,.2); color:var(--warn);}
+.pill.complete{background:rgba(154,161,184,.15); color:var(--ink-dim);}
+.pill.declined{background:rgba(226,99,122,.15); color:var(--bad);}
+.category-block{margin-bottom:22px;}
+.category-block:last-child{margin-bottom:0;}
+.category-block h3{font-size:15px; margin:0 0 6px; color:var(--ice);}
+.technique{color:var(--ink-dim); font-size:13px; line-height:1.55; margin:0 0 12px;}
+.sound-card{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:8px;}
+.sound-card .sc-top{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;}
+.sound-card .target{font-weight:700; font-size:14.5px;}
+.sound-card .meta{color:var(--ink-dim); font-size:12.5px; margin-top:4px; line-height:1.5;}
+.badge{display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:700;}
+.badge.assigned{background:#1a2a4a; color:var(--ice);}
+.badge.practicing{background:rgba(227,168,87,.2); color:var(--warn);}
+.badge.resolved{background:rgba(46,125,91,.2); color:#8fe0bb;}
+.empty{color:var(--ink-dim); font-size:14px; padding:8px 2px;}
+.btn{background:var(--ice); color:var(--navy); border:none; border-radius:9px; padding:11px 20px; font-size:14px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block;}
+.btn:hover{filter:brightness(1.05);}
+.btn.secondary{background:transparent; color:var(--ice); border:1px solid var(--ice);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="gate">Checking access…</div>
+<div id="denied" class="hidden">
+  <h1>Not authorized</h1>
+  <p id="deniedMsg">You don't have access to view this page.</p>
+  <p><a href="index.html">Back to sign in</a></p>
+</div>
+
+<div id="app" class="hidden">
+  <div class="logo">Bespoken English</div>
+  <div id="viewAsBanner" class="viewas-banner hidden"></div>
+
+  <div class="top-row">
+    <div>
+      <h1 id="pageTitle">Your Clarity Focus</h1>
+      <p class="sub" id="pageSub">The sounds we're working on together.</p>
+    </div>
+    <div>
+      <span id="whoami" style="color:var(--ink-dim); font-size:13px;"></span>
+      <span id="signoutWrap"> &nbsp;·&nbsp; <span class="signout" id="signoutBtn">Sign out</span></span>
+    </div>
+  </div>
+
+  <div class="panel" id="progressPanel">
+    <h2>Your progress</h2>
+    <p class="desc">This is exactly the report Phil uses too — same numbers, same page, so we can talk through anything together, item by item.</p>
+    <div class="progress-grid">
+      <div class="progress-stat"><div class="n" id="statAssigned">0</div><div class="l">Assigned</div></div>
+      <div class="progress-stat"><div class="n" id="statPracticing">0</div><div class="l">Practicing</div></div>
+      <div class="progress-stat"><div class="n" id="statResolved">0</div><div class="l">Resolved</div></div>
+    </div>
+    <div id="roundsList" style="margin-top:18px;"></div>
+    <div class="empty hidden" id="roundsEmpty">No training rounds recorded yet.</div>
+  </div>
+
+  <div class="panel" id="recordPanel">
+    <h2>Assessment recording</h2>
+    <p class="desc" id="recordDesc">Loading…</p>
+    <a class="btn hidden" id="recordBtn" href="#" target="_blank" rel="noopener">Record a new assessment</a>
+  </div>
+
+  <div class="panel" id="soundsPanel">
+    <h2>Your assigned sounds</h2>
+    <p class="desc">Everything below is something Phil has covered with you live and assigned for you to keep working on. As each one is re-tested and confirmed, it moves to Resolved.</p>
+    <div id="categoriesWrap"></div>
+    <div class="empty hidden" id="soundsEmpty">Nothing has been assigned yet. Once Phil covers a sound with you in a session, it will show up here.</div>
+  </div>
+</div>
+
+</div>
+
+<script src="lc-taxonomy.js"></script>
+<script src="lc-technique-copy.js"></script>
+<script>
+(function(){
+"use strict";
+var SUPABASE_URL = "https://zqcwhsxaawmrckbglcim.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
+var STORAGE_KEY = "bt-session";
+var LOGIN_URL = "index.html";
+
+// TODO(Phil): confirm the live phonetic-assessment site URL (Netlify) and
+// update this constant — same placeholder pattern phonetic-assessment's own
+// index.html uses for its LOGIN_URL until the custom domain is wired up.
+var PHONETIC_ASSESSMENT_URL = "https://phonetic-assessment.netlify.app/index.html";
+
+function loadSession(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
+  catch(e){ return null; }
+}
+function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function clearSession(){ localStorage.removeItem(STORAGE_KEY); }
+
+function parseHashTokens(){
+  var hash = location.hash || "";
+  if (hash.indexOf("bt_access_token=") === -1) return null;
+  var params = new URLSearchParams(hash.replace(/^#/, ""));
+  var at = params.get("bt_access_token");
+  var rt = params.get("bt_refresh_token");
+  if (!at) return null;
+  return { access_token: at, refresh_token: rt };
+}
+
+function redirectToLogin(){
+  var returnTo = location.href.split("#")[0];
+  location.href = LOGIN_URL + "?return_to=" + encodeURIComponent(returnTo) + "&purpose=training";
+}
+
+function authFetch(path, opts){
+  opts = opts || {};
+  var session = loadSession();
+  var headers = {
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": "Bearer " + ((session && session.access_token) || ""),
+    "Content-Type": "application/json"
+  };
+  if (opts.headers){ for (var k in opts.headers){ headers[k] = opts.headers[k]; } }
+  opts.headers = headers;
+  return fetch(SUPABASE_URL + path, opts);
+}
+
+function esc(s){
+  var d = document.createElement("div");
+  d.textContent = (s === null || s === undefined) ? "" : String(s);
+  return d.innerHTML;
+}
+
+function fmtDate(iso){
+  if (!iso) return "—";
+  var d = new Date(iso);
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+var ROUND_STATUS_LABEL = {
+  pending_approval: "Pending approval",
+  active: "Active",
+  complete: "Complete",
+  declined: "Declined"
+};
+
+var currentUser = null;   // the signed-in account (from bt-session)
+var isStaff = false;      // is_admin or is_trainer on the signed-in account
+var viewedId = null;      // profiles.id whose Clarity Focus is being shown
+var viewedProfile = null;
+
+function showDenied(msg){
+  document.getElementById("gate").classList.add("hidden");
+  document.getElementById("denied").classList.remove("hidden");
+  if (msg) document.getElementById("deniedMsg").textContent = msg;
+}
+
+function init(){
+  var fromHash = parseHashTokens();
+  if (fromHash){
+    saveSession(fromHash);
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  var session = loadSession();
+  if (!session || !session.access_token){
+    redirectToLogin();
+    return;
+  }
+
+  authFetch("/auth/v1/user").then(function(res){
+    if (!res.ok){ redirectToLogin(); return; }
+    return res.json().then(function(user){
+      currentUser = user;
+      return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(user.id) + "&select=id,full_name,email,is_admin,is_trainer");
+    });
+  }).then(function(res){
+    if (!res) return;
+    return res.json();
+  }).then(function(rows){
+    if (!rows) return;
+    var myProfile = rows[0];
+    if (!myProfile){ showDenied("We couldn't find your profile."); return; }
+    isStaff = !!(myProfile.is_admin || myProfile.is_trainer);
+
+    var qs = new URLSearchParams(location.search);
+    var studentParam = qs.get("student");
+    viewedId = (studentParam && isStaff) ? studentParam : myProfile.id;
+
+    if (viewedId !== myProfile.id){
+      // "View as this student" mode — banner + no sign-out/record actions.
+      return authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(viewedId) + "&select=id,full_name,email").then(function(r){
+        return r.json();
+      }).then(function(prows){
+        viewedProfile = prows && prows[0];
+        if (!viewedProfile){ showDenied("That student couldn't be found, or you don't have access to view them."); return null; }
+        setupViewAs();
+        return loadData();
+      });
+    } else {
+      viewedProfile = myProfile;
+      document.getElementById("whoami").textContent = "Signed in as " + (myProfile.email || currentUser.email || "");
+      return loadData();
+    }
+  }).catch(function(){
+    showDenied("Something went wrong loading this page. Please try again.");
+  });
+}
+
+function setupViewAs(){
+  var banner = document.getElementById("viewAsBanner");
+  banner.classList.remove("hidden");
+  banner.innerHTML = "Viewing " + esc(viewedProfile.full_name || viewedProfile.email) +
+    "'s Clarity Focus — this is exactly what they see. <a href=\"admin.html\">Back to admin</a>";
+  document.getElementById("pageTitle").textContent = (viewedProfile.full_name || "Student") + "'s Clarity Focus";
+  document.getElementById("signoutWrap").classList.add("hidden");
+  document.getElementById("recordPanel").classList.add("hidden"); // recording is a student action, not Phil's
+}
+
+function loadData(){
+  document.getElementById("gate").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+
+  return Promise.all([
+    authFetch("/rest/v1/language_clarity_sound_objectives?user_id=eq." + encodeURIComponent(viewedId) +
+      "&status=neq.available&select=id,position,phoneme,category,gloss,heard,freq_label,example_word,status,round,assigned_note,pending_sri_migration&order=round.desc"),
+    authFetch("/rest/v1/language_clarity_rounds?user_id=eq." + encodeURIComponent(viewedId) +
+      "&select=id,round_number,participant_type,status,requested_at,approved_at,completed_at,pre_test_result_id,post_test_result_id&order=round_number.asc")
+  ]).then(function(results){
+    return Promise.all(results.map(function(r){ return r.json(); }));
+  }).then(function(data){
+    var objectives = data[0] || [];
+    var rounds = data[1] || [];
+    renderProgress(objectives, rounds);
+    renderSounds(objectives);
+    renderRecordPanel(rounds);
+  }).catch(function(){
+    document.getElementById("soundsPanel").innerHTML = "<p class=\"empty\">Couldn't load your Clarity Focus right now. Please refresh, or reach out if this keeps happening.</p>";
+  });
+}
+
+function renderProgress(objectives, rounds){
+  var counts = { assigned: 0, practicing: 0, resolved: 0 };
+  objectives.forEach(function(o){ if (counts.hasOwnProperty(o.status)) counts[o.status]++; });
+  document.getElementById("statAssigned").textContent = counts.assigned;
+  document.getElementById("statPracticing").textContent = counts.practicing;
+  document.getElementById("statResolved").textContent = counts.resolved;
+
+  var listEl = document.getElementById("roundsList");
+  var emptyEl = document.getElementById("roundsEmpty");
+  listEl.innerHTML = "";
+  if (!rounds.length){
+    emptyEl.classList.remove("hidden");
+    return;
+  }
+  emptyEl.classList.add("hidden");
+  rounds.forEach(function(r){
+    var row = document.createElement("div");
+    row.className = "round-row";
+    var statusLabel = ROUND_STATUS_LABEL[r.status] || r.status;
+    var meta = r.participant_type === "corporate" ? "Corporate-sponsored" : "Private";
+    if (r.status === "pending_approval" && r.requested_at){
+      meta += " · requested " + fmtDate(r.requested_at);
+    } else if (r.status === "active" && r.approved_at){
+      meta += " · approved " + fmtDate(r.approved_at);
+    } else if ((r.status === "complete" || r.status === "declined") && r.completed_at){
+      meta += " · closed " + fmtDate(r.completed_at);
+    }
+    row.innerHTML =
+      "<div><div class=\"rlabel\">Round " + esc(r.round_number) + "</div><div class=\"rmeta\">" + esc(meta) + "</div></div>" +
+      "<span class=\"pill " + esc(r.status) + "\">" + esc(statusLabel) + "</span>";
+    listEl.appendChild(row);
+  });
+}
+
+function renderRecordPanel(rounds){
+  var desc = document.getElementById("recordDesc");
+  var btn = document.getElementById("recordBtn");
+  if (!rounds.length){
+    desc.textContent = "You haven't recorded a phonetic assessment yet. Once you do, Phil will build your Personal Sound Analysis and assign your first sounds.";
+    btn.href = PHONETIC_ASSESSMENT_URL;
+    btn.textContent = "Record your assessment";
+    btn.classList.remove("hidden");
+    return;
+  }
+  var latest = rounds[rounds.length - 1];
+  if (latest.status === "complete" || latest.status === "declined"){
+    desc.textContent = "Your Language Clarity training is complete for now. Reach out to Phil if you'd like to talk about continuing.";
+    btn.classList.add("hidden");
+    return;
+  }
+  if (!latest.post_test_result_id){
+    desc.textContent = "When you're ready for Phil to re-test what you've been working on, record a new assessment here — it's the same recording screen as before.";
+    btn.href = PHONETIC_ASSESSMENT_URL + "?test_type=post&round=" + encodeURIComponent(latest.round_number);
+    btn.textContent = "Record your Round " + latest.round_number + " Post-Test";
+    btn.classList.remove("hidden");
+  } else {
+    desc.textContent = "Your most recent assessment is in. Phil will follow up here once your next round of training is set up.";
+    btn.classList.add("hidden");
+  }
+}
+
+function renderSounds(objectives){
+  var wrap = document.getElementById("categoriesWrap");
+  var emptyEl = document.getElementById("soundsEmpty");
+  wrap.innerHTML = "";
+  if (!objectives.length){
+    emptyEl.classList.remove("hidden");
+    return;
+  }
+  emptyEl.classList.add("hidden");
+
+  var byCategory = {};
+  objectives.forEach(function(o){
+    (byCategory[o.category] = byCategory[o.category] || []).push(o);
+  });
+
+  var order = (window.LCTaxonomy && window.LCTaxonomy.CATEGORY_ORDER) || Object.keys(byCategory);
+  var categories = order.filter(function(c){ return byCategory[c]; });
+  Object.keys(byCategory).forEach(function(c){ if (categories.indexOf(c) === -1) categories.push(c); });
+
+  categories.forEach(function(cat){
+    var rows = byCategory[cat];
+    var block = document.createElement("div");
+    block.className = "category-block";
+
+    var h = document.createElement("h3");
+    h.textContent = cat;
+    block.appendChild(h);
+
+    var technique = window.LCTechniqueCopy && window.LCTechniqueCopy[cat];
+    if (technique){
+      var p = document.createElement("p");
+      p.className = "technique";
+      p.textContent = technique;
+      block.appendChild(p);
+    }
+
+    rows.forEach(function(o){
+      var label = (window.LCTaxonomy && window.LCTaxonomy.soundLabel)
+        ? window.LCTaxonomy.soundLabel(o.position, o.phoneme, o.gloss)
+        : ("/" + o.phoneme + "/");
+      var card = document.createElement("div");
+      card.className = "sound-card";
+      var heardText = o.heard ? ("/" + o.heard + "/") : "";
+      card.innerHTML =
+        "<div class=\"sc-top\"><span class=\"target\">" + esc(label) + "</span>" +
+        "<span class=\"badge " + esc(o.status) + "\">" + esc(o.status.charAt(0).toUpperCase() + o.status.slice(1)) + "</span></div>" +
+        "<div class=\"meta\">What we heard: " + esc(heardText || "—") +
+        (o.freq_label ? " · " + esc(o.freq_label) : "") +
+        (o.example_word ? " · example: " + esc(o.example_word) : "") + "</div>";
+      block.appendChild(card);
+    });
+
+    wrap.appendChild(block);
+  });
+}
+
+document.getElementById("signoutBtn").addEventListener("click", function(){
+  clearSession();
+  location.href = LOGIN_URL;
+});
+
+init();
+})();
+</script>
+</body>
+</html>
