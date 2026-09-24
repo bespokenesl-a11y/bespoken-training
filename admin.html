@@ -136,6 +136,18 @@ border:1px dashed var(--ice); display:none;
 <div class="empty hidden" id="clarityEmpty">No recordings submitted yet.</div>
 </div>
 
+<div class="panel" id="lcAssignPanel">
+<h2>Language Clarity — sound assignments</h2>
+<p class="desc">Every documented sound from a student's PSA lands here the moment it's generated, fully assignable. After a live session, tick off whichever sound(s) you actually covered — no separate re-entry of what's already in the PSA, and no penalty for a session going differently than planned. Only Assigned/Practicing/Resolved sounds are visible to the student.</p>
+<div id="lcAssignBody"><div class="empty">Loading…</div></div>
+</div>
+
+<div class="panel" id="lcRoundsPanel">
+<h2>Language Clarity — rounds &amp; progress</h2>
+<p class="desc">Round-over-round progress per student. Corporate-sponsored rounds need your manual approval (read their sponsor's email reply yourself, then Approve or Decline here); private students start their next round directly once you've sold them another block.</p>
+<div id="lcRoundsBody"><div class="empty">Loading…</div></div>
+</div>
+
 <div class="panel" id="pendingPanel">
 <h2>Pending approvals</h2>
 <p class="desc">Students who signed up as corporate-sponsored but don't have access yet. Approving grants access directly — no code needed.</p>
@@ -240,6 +252,7 @@ border:1px dashed var(--ice); display:none;
 </div>
 </div>
 
+<script src="lc-taxonomy.js"></script>
 <script>
 (function(){
 "use strict";
@@ -349,6 +362,8 @@ loadPendingAndRoster();
 loadApprovedTrainers();
 loadVocabTraining();
 loadVocabProgress();
+loadLanguageClarityAssignments();
+loadLanguageClarityRounds();
 // couponPanel needs no initial load
 }
 
@@ -1652,6 +1667,382 @@ lines.push('<div class="stat-line" style="color:var(--gray);">Post-test recorded
 }
 
 card.innerHTML = lines.join("");
+return card;
+}
+
+// ---------- Language Clarity — sound assignments ----------
+
+var LC_STATUS_ORDER = ["available", "assigned", "practicing", "resolved"];
+var LC_STATUS_LABEL = { available: "Available", assigned: "Assigned", practicing: "Practicing", resolved: "Resolved" };
+
+function loadLanguageClarityAssignments(){
+authFetch("/rest/v1/language_clarity_sound_objectives?select=id,user_id,round,position,phoneme,category,gloss,heard,freq_label,example_word,status,assigned_at,assigned_note,pending_sri_migration&order=user_id.asc,round.desc,category.asc")
+.then(function(r){ return r.ok ? r.json() : []; })
+.then(function(objectives){
+var userIds = uniq((objectives || []).map(function(o){ return o.user_id; }));
+if (!userIds.length){ renderLcAssignBody([], {}); return; }
+authFetch("/rest/v1/profiles?id=in.(" + userIds.join(",") + ")&select=id,full_name,email").then(function(r){ return r.ok ? r.json() : []; }).then(function(profiles){
+var byId = {};
+(profiles || []).forEach(function(p){ byId[p.id] = p; });
+renderLcAssignBody(objectives || [], byId);
+});
+}).catch(function(){ renderLcAssignBody([], {}); });
+}
+
+function uniq(arr){
+var seen = {}, out = [];
+arr.forEach(function(v){ if (v && !seen[v]){ seen[v] = true; out.push(v); } });
+return out;
+}
+
+function renderLcAssignBody(objectives, profilesById){
+var body = document.getElementById("lcAssignBody");
+body.innerHTML = "";
+if (!objectives.length){
+body.innerHTML = '<div class="empty">No Language Clarity PSA data yet. Once a student\'s scored key is run through the PSA generator, their sounds show up here.</div>';
+return;
+}
+
+var byUser = {};
+objectives.forEach(function(o){ (byUser[o.user_id] = byUser[o.user_id] || []).push(o); });
+
+Object.keys(byUser).forEach(function(uid){
+var profile = profilesById[uid] || {};
+var rows = byUser[uid];
+
+var wrap = document.createElement("div");
+wrap.className = "student-block";
+
+var head = document.createElement("div");
+head.className = "student-head";
+head.innerHTML = '<div><span class="sname">' + esc(profile.full_name || profile.email || uid) + '</span> <span class="smeta">' + esc(profile.email || "") + '</span></div>' +
+'<div><a class="mini-btn" href="clarity-focus.html?student=' + encodeURIComponent(uid) + '" target="_blank" rel="noopener">View as this student</a></div>';
+wrap.appendChild(head);
+
+var byRound = {};
+rows.forEach(function(o){ (byRound[o.round] = byRound[o.round] || []).push(o); });
+var rounds = Object.keys(byRound).map(Number).sort(function(a, b){ return b - a; });
+
+rounds.forEach(function(roundNum){
+var roundHeading = document.createElement("div");
+roundHeading.className = "stat-line";
+roundHeading.style.marginTop = "10px";
+roundHeading.innerHTML = "<b>Round " + roundNum + "</b>";
+wrap.appendChild(roundHeading);
+
+var byCat = {};
+byRound[roundNum].forEach(function(o){ (byCat[o.category] = byCat[o.category] || []).push(o); });
+var order = (window.LCTaxonomy && window.LCTaxonomy.CATEGORY_ORDER) || Object.keys(byCat);
+var cats = order.filter(function(c){ return byCat[c]; });
+Object.keys(byCat).forEach(function(c){ if (cats.indexOf(c) === -1) cats.push(c); });
+
+cats.forEach(function(cat){
+var catCard = document.createElement("div");
+catCard.className = "group-card";
+var catTitle = document.createElement("div");
+catTitle.innerHTML = "<b>" + esc(cat) + "</b>" + (byCat[cat][0].pending_sri_migration ? ' <span class="badge idle">pending S.R.I. migration</span>' : "");
+catCard.appendChild(catTitle);
+
+byCat[cat].forEach(function(o){
+catCard.appendChild(renderLcObjectiveRow(o));
+});
+
+wrap.appendChild(catCard);
+});
+});
+
+body.appendChild(wrap);
+});
+}
+
+function renderLcObjectiveRow(o){
+var row = document.createElement("div");
+row.style.borderTop = "1px solid var(--line)";
+row.style.padding = "8px 0";
+var label = (window.LCTaxonomy && window.LCTaxonomy.soundLabel) ? window.LCTaxonomy.soundLabel(o.position, o.phoneme, o.gloss) : ("/" + o.phoneme + "/");
+var badgeClass = o.status === "resolved" ? "pass" : (o.status === "practicing" ? "training" : (o.status === "assigned" ? "ready" : "idle"));
+
+var top = document.createElement("div");
+top.className = "gc-top";
+top.innerHTML = '<div>' + esc(label) + ' <span class="smeta">heard /' + esc(o.heard || "") + '/' + (o.freq_label ? " · " + esc(o.freq_label) : "") + (o.example_word ? " · " + esc(o.example_word) : "") + '</span></div>' +
+'<span class="badge ' + badgeClass + '">' + esc(LC_STATUS_LABEL[o.status] || o.status) + '</span>';
+row.appendChild(top);
+
+var actions = document.createElement("div");
+actions.style.marginTop = "6px";
+actions.style.display = "flex";
+actions.style.gap = "8px";
+actions.style.flexWrap = "wrap";
+actions.style.alignItems = "center";
+
+function addBtn(text, nextStatus, extraFields){
+var b = document.createElement("button");
+b.className = "mini-btn";
+b.textContent = text;
+b.addEventListener("click", function(){
+b.disabled = true;
+var fields = Object.assign({ status: nextStatus }, extraFields || {});
+patchObjective(o.id, fields, function(ok){
+if (ok){ loadLanguageClarityAssignments(); }
+else { b.disabled = false; alert("Couldn't save that — please try again."); }
+});
+});
+actions.appendChild(b);
+}
+
+if (o.status === "available"){
+addBtn("Assign", "assigned", { assigned_at: new Date().toISOString() });
+} else if (o.status === "assigned"){
+addBtn("Mark practicing", "practicing", {});
+addBtn("Mark resolved", "resolved", { resolved_at: new Date().toISOString() });
+} else if (o.status === "practicing"){
+addBtn("Mark resolved", "resolved", { resolved_at: new Date().toISOString() });
+} else if (o.status === "resolved"){
+addBtn("Reopen (mark practicing)", "practicing", { resolved_at: null });
+}
+
+var noteInput = document.createElement("input");
+noteInput.type = "text";
+noteInput.placeholder = "Note — what was covered / observed";
+noteInput.value = o.assigned_note || "";
+noteInput.style.flex = "1";
+noteInput.style.minWidth = "160px";
+var saveNoteBtn = document.createElement("button");
+saveNoteBtn.className = "mini-btn";
+saveNoteBtn.textContent = "Save note";
+saveNoteBtn.addEventListener("click", function(){
+saveNoteBtn.disabled = true;
+patchObjective(o.id, { assigned_note: noteInput.value }, function(ok){
+saveNoteBtn.disabled = false;
+saveNoteBtn.textContent = ok ? "Saved" : "Retry";
+setTimeout(function(){ saveNoteBtn.textContent = "Save note"; }, 1500);
+});
+});
+actions.appendChild(noteInput);
+actions.appendChild(saveNoteBtn);
+
+row.appendChild(actions);
+return row;
+}
+
+function patchObjective(id, fields, cb){
+authFetch("/rest/v1/language_clarity_sound_objectives?id=eq." + encodeURIComponent(id), {
+method: "PATCH",
+headers: { "Prefer": "return=minimal" },
+body: JSON.stringify(fields)
+}).then(function(res){ cb(res.ok); }).catch(function(){ cb(false); });
+}
+
+// ---------- Language Clarity — rounds & progress ----------
+
+function loadLanguageClarityRounds(){
+Promise.all([
+authFetch("/rest/v1/language_clarity_rounds?select=id,user_id,round_number,participant_type,status,extension_request_number,requested_at,approved_at,declined_at,completed_at,pre_test_result_id,post_test_result_id,notes&order=user_id.asc,round_number.asc").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/language_clarity_sound_objectives?select=user_id,status").then(function(r){ return r.ok ? r.json() : []; })
+]).then(function(results){
+var rounds = results[0] || [];
+var objectives = results[1] || [];
+var userIds = uniq(rounds.map(function(r){ return r.user_id; }).concat(objectives.map(function(o){ return o.user_id; })));
+if (!userIds.length){ renderLcRoundsBody([], {}, {}); return; }
+Promise.all([
+authFetch("/rest/v1/profiles?id=in.(" + userIds.join(",") + ")&select=id,full_name,email").then(function(r){ return r.ok ? r.json() : []; }),
+authFetch("/rest/v1/language_clarity_results?user_id=in.(" + userIds.join(",") + ")&select=id,user_id,test_type,round,session_date,created_at,recording_path&order=created_at.desc").then(function(r){ return r.ok ? r.json() : []; })
+]).then(function(more){
+var profiles = more[0] || [], results2 = more[1] || [];
+var profilesById = {};
+profiles.forEach(function(p){ profilesById[p.id] = p; });
+var progressByUser = {};
+objectives.forEach(function(o){
+var s = (progressByUser[o.user_id] = progressByUser[o.user_id] || { assigned: 0, practicing: 0, resolved: 0 });
+if (s.hasOwnProperty(o.status)) s[o.status]++;
+});
+var resultsByUser = {};
+results2.forEach(function(r){ (resultsByUser[r.user_id] = resultsByUser[r.user_id] || []).push(r); });
+renderLcRoundsBody(rounds, profilesById, progressByUser, resultsByUser, userIds);
+});
+}).catch(function(){ renderLcRoundsBody([], {}, {}); });
+}
+
+function renderLcRoundsBody(rounds, profilesById, progressByUser, resultsByUser, userIds){
+resultsByUser = resultsByUser || {};
+userIds = userIds || Object.keys(profilesById);
+var body = document.getElementById("lcRoundsBody");
+body.innerHTML = "";
+if (!userIds.length){
+body.innerHTML = '<div class="empty">No Language Clarity students yet.</div>';
+return;
+}
+
+var roundsByUser = {};
+rounds.forEach(function(r){ (roundsByUser[r.user_id] = roundsByUser[r.user_id] || []).push(r); });
+
+userIds.forEach(function(uid){
+var profile = profilesById[uid] || {};
+var progress = progressByUser[uid] || { assigned: 0, practicing: 0, resolved: 0 };
+var userRounds = (roundsByUser[uid] || []).slice().sort(function(a, b){ return a.round_number - b.round_number; });
+var userResults = resultsByUser[uid] || [];
+
+var wrap = document.createElement("div");
+wrap.className = "student-block";
+var head = document.createElement("div");
+head.className = "student-head";
+head.innerHTML = '<div><span class="sname">' + esc(profile.full_name || profile.email || uid) + '</span></div>' +
+'<div class="stat-line">' + progress.assigned + ' assigned · ' + progress.practicing + ' practicing · ' + progress.resolved + ' resolved</div>';
+wrap.appendChild(head);
+
+if (!userRounds.length){
+var starter = document.createElement("div");
+starter.className = "group-card";
+starter.innerHTML = '<div class="stat-line">No training round started yet.</div>';
+var typeSel = document.createElement("select");
+typeSel.innerHTML = '<option value="private">Private</option><option value="corporate">Corporate sponsor</option>';
+var startBtn = document.createElement("button");
+startBtn.className = "mini-btn";
+startBtn.textContent = "Start Round 1";
+startBtn.addEventListener("click", function(){
+startBtn.disabled = true;
+var ptype = typeSel.value;
+var fields = {
+user_id: uid, round_number: 1, participant_type: ptype,
+status: ptype === "corporate" ? "pending_approval" : "active",
+requested_at: new Date().toISOString()
+};
+if (ptype === "corporate"){ fields.approved_at = null; } else { fields.approved_at = new Date().toISOString(); }
+authFetch("/rest/v1/language_clarity_rounds", { method: "POST", headers: { "Prefer": "return=minimal" }, body: JSON.stringify(fields) })
+.then(function(res){ if (res.ok){ loadLanguageClarityRounds(); } else { startBtn.disabled = false; alert("Couldn't start the round."); } });
+});
+starter.appendChild(typeSel);
+starter.appendChild(startBtn);
+wrap.appendChild(starter);
+} else {
+userRounds.forEach(function(r){
+wrap.appendChild(renderLcRoundCard(r, userResults));
+});
+}
+
+body.appendChild(wrap);
+});
+}
+
+function renderLcRoundCard(r, userResults){
+var card = document.createElement("div");
+card.className = "group-card";
+var pillClass = r.status === "active" ? "active" : (r.status === "pending_approval" ? "pending" : "none");
+var statusLabel = { pending_approval: "Pending approval", active: "Active", complete: "Complete", declined: "Declined" }[r.status] || r.status;
+
+var top = document.createElement("div");
+top.className = "gc-top";
+top.innerHTML = '<div><b>Round ' + r.round_number + '</b> <span class="smeta">' + esc(r.participant_type) + '</span></div><span class="pill ' + pillClass + '">' + esc(statusLabel) + '</span>';
+card.appendChild(top);
+
+var meta = document.createElement("div");
+meta.className = "stat-line";
+var metaBits = [];
+if (r.requested_at) metaBits.push("requested " + fmtDate(r.requested_at));
+if (r.approved_at) metaBits.push("approved " + fmtDate(r.approved_at));
+if (r.declined_at) metaBits.push("declined " + fmtDate(r.declined_at));
+if (r.completed_at) metaBits.push("closed " + fmtDate(r.completed_at));
+meta.textContent = metaBits.join(" · ");
+card.appendChild(meta);
+
+var actions = document.createElement("div");
+actions.style.marginTop = "6px";
+actions.style.display = "flex";
+actions.style.gap = "8px";
+actions.style.flexWrap = "wrap";
+actions.style.alignItems = "center";
+
+function patchRound(fields, cb){
+authFetch("/rest/v1/language_clarity_rounds?id=eq." + encodeURIComponent(r.id), {
+method: "PATCH", headers: { "Prefer": "return=minimal" }, body: JSON.stringify(fields)
+}).then(function(res){ cb(res.ok); }).catch(function(){ cb(false); });
+}
+
+if (r.status === "pending_approval"){
+var apr = document.createElement("button");
+apr.className = "mini-btn";
+apr.textContent = "Approve";
+apr.addEventListener("click", function(){
+apr.disabled = true;
+patchRound({ status: "active", approved_at: new Date().toISOString() }, function(ok){ ok ? loadLanguageClarityRounds() : (apr.disabled = false); });
+});
+actions.appendChild(apr);
+
+var dec = document.createElement("button");
+dec.className = "mini-btn";
+dec.textContent = "Decline (mark complete)";
+dec.addEventListener("click", function(){
+if (!confirm("Decline this extension request? This marks the participant complete — no further tracking, per your standard process.")) return;
+dec.disabled = true;
+patchRound({ status: "declined", declined_at: new Date().toISOString(), completed_at: new Date().toISOString() }, function(ok){ ok ? loadLanguageClarityRounds() : (dec.disabled = false); });
+});
+actions.appendChild(dec);
+}
+
+if (r.status === "active" && !r.post_test_result_id){
+// Exclude this round's own pre-test recording (and anything already
+// tagged as a different round's pre-test) so it can't be mistakenly
+// linked as its own post-test — only untagged or already-'post' rows,
+// not already used as this round's pre-test, are offered.
+var candidates = (userResults || []).filter(function(res){
+return res.id !== r.pre_test_result_id && (!res.test_type || res.test_type === "post") && (!res.round || res.round === r.round_number);
+});
+if (candidates.length){
+var sel = document.createElement("select");
+sel.innerHTML = '<option value="">Link a recording as this round\'s Post-Test…</option>' +
+candidates.map(function(res){ return '<option value="' + esc(res.id) + '">' + esc(fmtDate(res.session_date || res.created_at)) + (res.test_type ? " (" + esc(res.test_type) + ")" : "") + '</option>'; }).join("");
+var linkBtn = document.createElement("button");
+linkBtn.className = "mini-btn";
+linkBtn.textContent = "Link";
+linkBtn.addEventListener("click", function(){
+if (!sel.value) return;
+linkBtn.disabled = true;
+authFetch("/rest/v1/language_clarity_results?id=eq." + encodeURIComponent(sel.value), {
+method: "PATCH", headers: { "Prefer": "return=minimal" },
+body: JSON.stringify({ test_type: "post", round: r.round_number })
+}).then(function(){
+return patchRound({ post_test_result_id: sel.value }, function(ok){ ok ? loadLanguageClarityRounds() : (linkBtn.disabled = false); });
+});
+});
+actions.appendChild(sel);
+actions.appendChild(linkBtn);
+} else {
+var waiting = document.createElement("span");
+waiting.className = "smeta";
+waiting.textContent = "Waiting on a post-test recording.";
+actions.appendChild(waiting);
+}
+}
+
+if (r.status === "active" && r.post_test_result_id){
+var nextBtn = document.createElement("button");
+nextBtn.className = "mini-btn";
+nextBtn.textContent = "Start Round " + (r.round_number + 1);
+nextBtn.addEventListener("click", function(){
+nextBtn.disabled = true;
+var fields = {
+user_id: r.user_id, round_number: r.round_number + 1, participant_type: r.participant_type,
+pre_test_result_id: r.post_test_result_id,
+status: r.participant_type === "corporate" ? "pending_approval" : "active",
+requested_at: new Date().toISOString()
+};
+if (r.participant_type !== "corporate"){ fields.approved_at = new Date().toISOString(); }
+authFetch("/rest/v1/language_clarity_rounds", { method: "POST", headers: { "Prefer": "return=minimal" }, body: JSON.stringify(fields) })
+.then(function(res){ if (res.ok){ loadLanguageClarityRounds(); } else { nextBtn.disabled = false; alert("Couldn't start the next round."); } });
+});
+actions.appendChild(nextBtn);
+
+var completeBtn = document.createElement("button");
+completeBtn.className = "mini-btn";
+completeBtn.textContent = "Mark complete (no more rounds)";
+completeBtn.addEventListener("click", function(){
+completeBtn.disabled = true;
+patchRound({ status: "complete", completed_at: new Date().toISOString() }, function(ok){ ok ? loadLanguageClarityRounds() : (completeBtn.disabled = false); });
+});
+actions.appendChild(completeBtn);
+}
+
+card.appendChild(actions);
 return card;
 }
 
