@@ -19,7 +19,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Calibri,Arial,sa
 h1{font-size:22px;margin:0 0 6px;}
 .sub{color:var(--ink-dim);font-size:13.5px;margin:0 0 24px;line-height:1.5;}
 label{display:block;font-size:13px;margin:14px 0 6px;color:var(--ink-dim);}
-input[type=text],input[type=email],input[type=password]{
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=tel]{
 width:100%;padding:11px 13px;border-radius:8px;border:1px solid var(--line);
 background:var(--panel2);color:var(--ink);font-size:14.5px;
 }
@@ -59,6 +59,7 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 .access-pill.active{background:rgba(46,125,91,.2);color:#8fe0bb;}
 .access-pill.pending{background:rgba(227,168,87,.2);color:#e3a857;}
 .access-pill.none{background:rgba(154,161,184,.15);color:var(--ink-dim);}
+.access-pill.warn{background:rgba(227,168,87,.2);color:#e3a857;}
 .hidden{display:none;}
 .company-field{display:none;}
 .company-field.show{display:block;}
@@ -75,15 +76,27 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 <div id="signupView">
 <h1>Create your account</h1>
 <p class="sub">One free account gets you into every assessment and, once enrolled, your training. Use the same login everywhere.</p>
-<label for="su-name">Full name</label>
-<input type="text" id="su-name" autocomplete="name">
-<label for="su-email">Email address</label>
+<label for="su-email">Email</label>
 <input type="email" id="su-email" autocomplete="email">
-<label for="su-pw">Password</label>
-<div class="pw-wrap">
-<input type="password" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
-<button type="button" class="pw-toggle" id="su-pw-toggle">Show</button>
-</div>
+<label for="su-pw">Create Password</label>
+<input type="text" id="su-pw" autocomplete="new-password" placeholder="At least 8 characters">
+<label for="su-pw2">Confirm Password</label>
+<input type="text" id="su-pw2" autocomplete="new-password">
+<label for="su-name">What shall we call you?</label>
+<input type="text" id="su-name" autocomplete="name">
+<label for="su-country">Country of origin</label>
+<input type="text" id="su-country">
+<label for="su-lang">Primary Language</label>
+<input type="text" id="su-lang">
+<label for="su-edu">Education</label>
+<input type="text" id="su-edu">
+<label for="su-birthday">Birthday</label>
+<input type="date" id="su-birthday">
+<label for="su-address">Home address</label>
+<input type="text" id="su-address">
+<label for="su-phone">Cell phone</label>
+<input type="tel" id="su-phone" placeholder="For updates &amp; assignments &mdash; not marketing" autocomplete="tel">
+<div class="field-hint">We'll use this to send you updates and assignments &mdash; never for marketing.</div>
 <label>How are you enrolling?</label>
 <div class="type-choice">
 <label><input type="radio" name="stype" value="private" checked><span>Private Student</span></label>
@@ -97,6 +110,7 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 <button class="btn" id="signupBtn">Create account</button>
 <div class="msg" id="signupMsg"></div>
 <div class="switch">Already have an account? <a id="toLogin">Sign in</a></div>
+<div class="switch">Trainer or Admin? <a href="staff-login.html">Sign in here</a></div>
 </div>
 
 <div class="hidden" id="loginView">
@@ -119,6 +133,7 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 <button class="btn" id="loginBtn">Sign in</button>
 <div class="msg" id="loginMsg"></div>
 <div class="switch">Need an account? <a id="toSignup">Create one</a></div>
+<div class="switch">Trainer or Admin? <a href="staff-login.html">Sign in here</a></div>
 </div>
 </div>
 
@@ -150,9 +165,12 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 <p class="sub" id="accessSummary">Checking your access status&hellip;</p>
 
 <div id="redeemBlock">
-<label for="couponInput">Have a code from your instructor?</label>
+<label>Access code</label>
+<div class="field-hint" id="redeemBoxState"></div>
+<div id="couponFieldWrap">
 <input type="text" id="couponInput" placeholder="Enter your access code">
 <button class="btn" id="redeemBtn">Redeem code</button>
+</div>
 <div class="msg" id="redeemMsg"></div>
 </div>
 </div>
@@ -224,7 +242,8 @@ el.textContent = text;
 el.className = 'msg ' + (isError ? 'error' : 'ok');
 }
 
-// ---- show/hide password toggles ----
+// ---- show/hide password toggles (login + recovery only — the signup
+// password fields are intentionally always visible, per spec) ----
 function wireToggle(toggleId, inputId){
 var btn = document.getElementById(toggleId);
 var input = document.getElementById(inputId);
@@ -235,7 +254,6 @@ input.type = showing ? 'password' : 'text';
 btn.textContent = showing ? 'Show' : 'Hide';
 });
 }
-wireToggle('su-pw-toggle', 'su-pw');
 wireToggle('li-pw-toggle', 'li-pw');
 wireToggle('rec-pw-toggle', 'rec-pw');
 wireToggle('rec-pw2-toggle', 'rec-pw2');
@@ -295,15 +313,30 @@ btn.disabled = false; btn.textContent = 'Send reset link';
 // ---- sign up ----
 document.getElementById('signupBtn').onclick = async function(){
 var btn = this;
-var name = document.getElementById('su-name').value.trim();
 var email = document.getElementById('su-email').value.trim();
 var pw = document.getElementById('su-pw').value;
+var pw2 = document.getElementById('su-pw2').value;
+var name = document.getElementById('su-name').value.trim();
+var country = document.getElementById('su-country').value.trim();
+var lang = document.getElementById('su-lang').value.trim();
+var edu = document.getElementById('su-edu').value.trim();
+var birthday = document.getElementById('su-birthday').value;
+var address = document.getElementById('su-address').value.trim();
+var phone = document.getElementById('su-phone').value.trim();
 var stype = document.querySelector('input[name=stype]:checked').value;
 var company = document.getElementById('su-company').value.trim();
 var msgEl = document.getElementById('signupMsg');
 
-if(!name || !email || pw.length < 8){
-showMsg(msgEl, 'Please enter your name, a valid email, and a password of at least 8 characters.', true);
+if(!email || !name || !country || !lang || !edu || !birthday || !address || !phone){
+showMsg(msgEl, 'Please fill in every field — we use all of it to personalize your training.', true);
+return;
+}
+if(pw.length < 8){
+showMsg(msgEl, 'Your password must be at least 8 characters.', true);
+return;
+}
+if(pw !== pw2){
+showMsg(msgEl, "Those passwords don't match. Please re-enter them.", true);
 return;
 }
 if(stype === 'corporate_sponsor' && !company){
@@ -325,10 +358,14 @@ btn.disabled = false; btn.textContent = 'Create account';
 return;
 }
 
-// Stash the chosen student_type/company so it can be applied the moment
-// we have an authenticated session — either right now (email confirmation
-// off) or on first login after they confirm (email confirmation on).
-localStorage.setItem('bt-pending-profile', JSON.stringify({ student_type: stype, company: company }));
+// Stash everything collected here so it can be applied the moment we have
+// an authenticated session — either right now (email confirmation off) or
+// on first login after they confirm (email confirmation on).
+localStorage.setItem('bt-pending-profile', JSON.stringify({
+full_name: name, student_type: stype, company: company,
+country_of_origin: country, primary_language: lang, education: edu,
+birthday: birthday, home_address: address, cell_phone: phone
+}));
 
 if(data.access_token){
 // Confirmation is off (or this project auto-confirms) — we're
@@ -382,7 +419,14 @@ btn.disabled = false; btn.textContent = 'Sign in';
 }
 };
 
-async function applyPendingProfile(){
+// Applies any stashed signup fields to the profile row. Retried at every
+// entry point where we have a live session (immediately after signup, on
+// next login, after a password reset, and on plain page reload) so a
+// transient failure right after signup doesn't silently drop a student's
+// data — it's only cleared once the write actually succeeds. One extra
+// same-session retry (after a short delay) covers a transient blip without
+// making the student do anything.
+async function applyPendingProfile(attempt){
 var raw = localStorage.getItem('bt-pending-profile');
 if(!raw) return;
 try{
@@ -391,13 +435,30 @@ var session = loadSession();
 var res = await authFetch('/rest/v1/profiles?id=eq.' + session.user.id, {
 method: 'PATCH',
 headers: { 'Prefer': 'return=minimal' },
-body: JSON.stringify({ student_type: pending.student_type, company: pending.company || null })
+body: JSON.stringify({
+full_name: pending.full_name,
+student_type: pending.student_type,
+company: pending.company || null,
+country_of_origin: pending.country_of_origin,
+primary_language: pending.primary_language,
+education: pending.education,
+birthday: pending.birthday,
+home_address: pending.home_address,
+cell_phone: pending.cell_phone
+})
 });
-// Only clear the pending marker once the write actually succeeds —
-// otherwise a transient server error silently drops the student's
-// enrollment type/company on the floor and no one finds out.
-if(res.ok){ localStorage.removeItem('bt-pending-profile'); }
-}catch(e){ /* not fatal — will retry applying on next login */ }
+if(res.ok){
+localStorage.removeItem('bt-pending-profile');
+} else if(!attempt){
+await new Promise(function(r){ setTimeout(r, 1500); });
+await applyPendingProfile(1);
+}
+}catch(e){
+if(!attempt){
+await new Promise(function(r){ setTimeout(r, 1500); });
+await applyPendingProfile(1);
+}
+}
 }
 
 document.getElementById('signoutBtn').onclick = function(){
@@ -421,7 +482,7 @@ var row = Array.isArray(rows) ? rows[0] : rows;
 if(row && row.success){
 showMsg(msgEl, row.message, false);
 document.getElementById('couponInput').value = '';
-refreshAccessSummary();
+refreshAccessArea();
 } else {
 showMsg(msgEl, (row && row.message) || 'Could not redeem that code.', true);
 }
@@ -431,21 +492,68 @@ showMsg(msgEl, 'Something went wrong reaching the server.', true);
 btn.disabled = false; btn.textContent = 'Redeem code';
 };
 
-async function refreshAccessSummary(){
+// Renewal warning window: inside this many days of expiring, the code box
+// switches from a read-only display to an editable "renew" prompt.
+var RENEWAL_WARNING_DAYS = 14;
+
+async function refreshAccessArea(){
 var session = loadSession();
 var summaryEl = document.getElementById('accessSummary');
+var redeemBlock = document.getElementById('redeemBlock');
+var boxState = document.getElementById('redeemBoxState');
+var fieldWrap = document.getElementById('couponFieldWrap');
+
 try{
+var profRes = await authFetch('/rest/v1/profiles?id=eq.' + session.user.id + '&select=student_type');
+var profRows = await profRes.json();
+var studentType = (profRows[0] && profRows[0].student_type) || null;
+
+// Only private students ever need to see the access-code area at all —
+// corporate-sponsored students' access is managed by their sponsor.
+if(studentType === 'corporate_sponsor'){
+redeemBlock.classList.add('hidden');
+} else {
+redeemBlock.classList.remove('hidden');
+}
+
 var res = await authFetch('/rest/v1/access_grants?user_id=eq.' + session.user.id + '&order=expires_at.desc&select=status,expires_at,student_type');
 var rows = await res.json();
 var active = rows.find(function(r){ return r.status === 'active' && new Date(r.expires_at) > new Date(); });
 var pending = rows.find(function(r){ return r.status === 'pending'; });
+
 if(active){
 var d = new Date(active.expires_at);
-summaryEl.innerHTML = '<span class="access-pill active">Active</span> &nbsp;Your training access is open through ' + d.toLocaleDateString() + '.';
+summaryEl.innerHTML = '<span class="access-pill active">Active</span>&nbsp;Your training access is open through ' + d.toLocaleDateString() + '.';
 } else if(pending){
-summaryEl.innerHTML = '<span class="access-pill pending">Pending approval</span> &nbsp;Your corporate sponsor enrollment is waiting on approval.';
+summaryEl.innerHTML = '<span class="access-pill pending">Pending approval</span>&nbsp;Your corporate sponsor enrollment is waiting on approval.';
 } else {
-summaryEl.innerHTML = '<span class="access-pill none">No active access</span> &nbsp;Once you\'re approved or redeem a code, your training unlocks here.';
+summaryEl.innerHTML = '<span class="access-pill none">No active access</span>&nbsp;Once you\'re approved or redeem a code, your training unlocks here.';
+}
+
+if(studentType !== 'corporate_sponsor'){
+if(active){
+var daysLeft = (new Date(active.expires_at) - new Date()) / 86400000;
+var codeText = null;
+try{
+var codeRes = await authFetch('/rest/v1/coupon_codes?redeemed_by=eq.' + session.user.id + '&order=redeemed_at.desc&limit=1&select=code');
+var codeRows = await codeRes.json();
+codeText = (codeRows[0] && codeRows[0].code) || null;
+}catch(e){ /* not fatal — the box just won't show the code text */ }
+var expStr = new Date(active.expires_at).toLocaleDateString();
+if(daysLeft > RENEWAL_WARNING_DAYS){
+boxState.innerHTML = (codeText ? '<strong>' + codeText + '</strong> &middot; ' : '') + 'Active through ' + expStr + '. Nothing to do here.';
+fieldWrap.classList.add('hidden');
+} else {
+boxState.innerHTML = '<span class="access-pill warn">Renew soon</span>&nbsp;' + (codeText ? '<strong>' + codeText + '</strong> &middot; ' : '') + 'expires ' + expStr + '. Enter a new code below to keep your access active.';
+fieldWrap.classList.remove('hidden');
+}
+} else if(pending){
+boxState.textContent = 'Waiting on your sponsor’s approval — nothing to enter here yet.';
+fieldWrap.classList.add('hidden');
+} else {
+boxState.textContent = 'Enter a code from your instructor to unlock training.';
+fieldWrap.classList.remove('hidden');
+}
 }
 }catch(e){
 summaryEl.textContent = 'Could not check your access status right now.';
@@ -458,7 +566,7 @@ document.getElementById('authCard').classList.add('hidden');
 document.getElementById('recoveryCard').classList.add('hidden');
 document.getElementById('dashCard').classList.remove('hidden');
 document.getElementById('whoami').textContent = (session.user && session.user.email) || '';
-refreshAccessSummary();
+refreshAccessArea();
 
 // Hand off to whatever assessment sent us here, now that we have a
 // session. Tokens travel in the URL fragment (never sent to the server
