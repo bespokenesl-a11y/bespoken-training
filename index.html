@@ -64,6 +64,11 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 .company-field{display:none;}
 .company-field.show{display:block;}
 .field-hint{font-size:11.5px;color:var(--ink-dim);margin-top:4px;}
+.train-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:12px;}
+.train-card h3{margin:0 0 4px;font-size:15px;}
+.train-card p{margin:0;color:var(--ink-dim);font-size:13px;line-height:1.5;}
+.train-card .btn{margin-top:12px;padding:10px;font-size:14px;}
+.train-title{font-size:15px;font-weight:600;margin:22px 0 0;}
 </style>
 </head>
 <body>
@@ -163,6 +168,7 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 </div>
 <h1>Your training access</h1>
 <p class="sub" id="accessSummary">Checking your access status&hellip;</p>
+<div id="trainingSection" class="hidden"></div>
 
 <div id="redeemBlock">
 <label>Access code</label>
@@ -492,6 +498,87 @@ showMsg(msgEl, 'Something went wrong reaching the server.', true);
 btn.disabled = false; btn.textContent = 'Redeem code';
 };
 
+// ---- "Your training" section: shown once access is active. Vocabulary card
+// links to retest.html (Netlify) using the same URL-fragment session handoff as
+// the "Continue" button; Language Clarity card links to clarity-focus.html in
+// this folder (same origin, so it shares the bt-session login directly). ----
+var VOCAB_RETEST_URL = 'https://ephemeral-cranachan-fb33bc.netlify.app/retest.html';
+var CLARITY_URL = 'clarity-focus.html';
+
+function trainCard(title, text, label, onclick){
+var c = document.createElement('div');
+c.className = 'train-card';
+var h = document.createElement('h3');
+h.textContent = title;
+c.appendChild(h);
+var p = document.createElement('p');
+p.textContent = text;
+c.appendChild(p);
+if(label){
+var b = document.createElement('button');
+b.className = 'btn';
+b.textContent = label;
+b.onclick = onclick;
+c.appendChild(b);
+}
+return c;
+}
+
+async function renderTraining(active){
+var sec = document.getElementById('trainingSection');
+if(!active){ sec.classList.add('hidden'); sec.replaceChildren(); return; }
+var session = loadSession();
+var box = document.createElement('div');
+var title = document.createElement('div');
+title.className = 'train-title';
+title.textContent = 'Your training';
+box.appendChild(title);
+try{
+var v = await authFetch('/rest/v1/vocab_training_groups?user_id=eq.' + session.user.id + '&status=neq.completed&select=status');
+var l = await authFetch('/rest/v1/language_clarity_sound_objectives?user_id=eq.' + session.user.id + '&status=eq.assigned&select=id&limit=1');
+if(!v.ok || !l.ok) throw new Error('load');
+var vRows = await v.json();
+var lRows = await l.json();
+var any = false;
+if(vRows.length){
+any = true;
+var hasAssigned = vRows.some(function(r){ return r.status === 'assigned'; });
+if(hasAssigned){
+box.appendChild(trainCard('Vocabulary', 'You have vocabulary words ready to practice.', 'Start vocabulary training', function(){
+var s = loadSession();
+var url = new URL(VOCAB_RETEST_URL);
+url.hash = 'bt_access_token=' + encodeURIComponent(s.access_token) +
+'&bt_refresh_token=' + encodeURIComponent(s.refresh_token);
+location.href = url.toString();
+}));
+} else {
+box.appendChild(trainCard('Vocabulary', 'Your vocabulary round is finished. Your trainer will record your post-test result.'));
+}
+}
+if(lRows.length){
+any = true;
+box.appendChild(trainCard('Language Clarity', 'Your trainer has assigned sounds for you to practice.', 'Open Language Clarity training', function(){
+location.href = CLARITY_URL;
+}));
+}
+if(!any){
+var none = document.createElement('p');
+none.className = 'sub';
+none.style.marginTop = '12px';
+none.textContent = 'Nothing assigned yet. Your trainer will add it here.';
+box.appendChild(none);
+}
+}catch(e){
+var err = document.createElement('p');
+err.className = 'sub';
+err.style.marginTop = '12px';
+err.textContent = 'Could not load your training right now.';
+box.appendChild(err);
+}
+sec.replaceChildren(box);
+sec.classList.remove('hidden');
+}
+
 // Renewal warning window: inside this many days of expiring, the code box
 // switches from a read-only display to an editable "renew" prompt.
 var RENEWAL_WARNING_DAYS = 14;
@@ -530,6 +617,7 @@ summaryEl.innerHTML = '<span class="access-pill pending">Pending approval</span>
 summaryEl.innerHTML = '<span class="access-pill none">No active access</span>&nbsp;Once you\'re approved or redeem a code, your training unlocks here.';
 }
 
+renderTraining(active);
 if(studentType !== 'corporate_sponsor'){
 if(active){
 var daysLeft = (new Date(active.expires_at) - new Date()) / 86400000;
