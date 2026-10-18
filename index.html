@@ -193,8 +193,30 @@ var SUPABASE_URL = 'https://zqcwhsxaawmrckbglcim.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_0x-TxeUzQaB1_rsP7bnrRw_jBR9icOD';
 var STORAGE_KEY = 'bt-session';
 
+// ---- return_to allowlist: after sign-in, session tokens are only ever handed
+// to these exact hosts (https only). Anything else is ignored. Relative links
+// (e.g. clarity-focus.html) resolve to bespokenesl-a11y.github.io, so they pass. ----
+var ALLOWED_RETURN_HOSTS = [
+'bespokenenglish.com',
+'www.bespokenenglish.com',
+'bespokenesl-a11y.github.io',
+'ephemeral-cranachan-fb33bc.netlify.app',
+'bespokenesl-a11ynetifyapp.netlify.app'
+];
+
+function isAllowedReturnTo(value){
+try{
+var u = new URL(value, location.href);
+return u.protocol === 'https:' && ALLOWED_RETURN_HOSTS.indexOf(u.hostname) !== -1;
+}catch(e){ return false; }
+}
+
 var qs = new URLSearchParams(location.search);
 var returnTo = qs.get('return_to');
+if(returnTo && !isAllowedReturnTo(returnTo)){
+console.warn('Ignoring return_to: that destination is not an approved Bespoken host.');
+returnTo = null;
+}
 
 function saveSession(s){
 localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
@@ -546,6 +568,7 @@ var hasAssigned = vRows.some(function(r){ return r.status === 'assigned'; });
 if(hasAssigned){
 box.appendChild(trainCard('Vocabulary', 'You have vocabulary words ready to practice.', 'Start vocabulary training', function(){
 var s = loadSession();
+if(!isAllowedReturnTo(VOCAB_RETEST_URL)) return;
 var url = new URL(VOCAB_RETEST_URL);
 url.hash = 'bt_access_token=' + encodeURIComponent(s.access_token) +
 '&bt_refresh_token=' + encodeURIComponent(s.refresh_token);
@@ -660,8 +683,8 @@ refreshAccessArea();
 // session. Tokens travel in the URL fragment (never sent to the server
 // in a Referer header the way query params can be) and the receiving
 // app is expected to read + immediately strip them from the address bar.
-if(returnTo){
-var url = new URL(returnTo);
+if(returnTo && isAllowedReturnTo(returnTo)){
+var url = new URL(returnTo, location.href);
 url.hash = 'bt_access_token=' + encodeURIComponent(session.access_token) +
 '&bt_refresh_token=' + encodeURIComponent(session.refresh_token);
 var goBtn = document.createElement('button');
