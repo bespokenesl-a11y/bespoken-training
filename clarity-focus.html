@@ -115,6 +115,7 @@ h1{font-family:Georgia,serif; font-size:24px; margin:0 0 4px;}
 </div>
 
 <script src="lc-taxonomy.js"></script>
+<script src="lc-practice-words.js"></script>
 <script src="lc-technique-copy.js"></script>
 <script>
 (function(){
@@ -124,10 +125,9 @@ var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 var STORAGE_KEY = "bt-session";
 var LOGIN_URL = "index.html";
 
-// TODO(Phil): confirm the live phonetic-assessment site URL (Netlify) and
-// update this constant — same placeholder pattern phonetic-assessment's own
-// index.html uses for its LOGIN_URL until the custom domain is wired up.
-var PHONETIC_ASSESSMENT_URL = "https://phonetic-assessment.netlify.app/index.html";
+// Live phonetic-assessment recording app (Netlify). Confirmed by Phil 2026-10-20.
+// Post-test links append ?test_type=post&round=N to this base URL.
+var PHONETIC_ASSESSMENT_URL = "https://bespokenesl-a11ynetifyapp.netlify.app/";
 
 function loadSession(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
@@ -387,6 +387,17 @@ function renderSounds(objectives){
         "<div class=\"meta\">What we heard: " + esc(heardText || "—") +
         (o.freq_label ? " · " + esc(o.freq_label) : "") +
         (o.example_word ? " · example: " + esc(o.example_word) : "") + "</div>";
+      var pkey = o.phoneme + "|" + o.position;
+      var hasList = window.LC_PRACTICE && window.LC_PRACTICE[pkey];
+      var extra = document.createElement("div");
+      if (o.status === "assigned" && hasList){
+        extra.className = "practice-row";
+        extra.innerHTML = "<a class=\"btn\" href=\"practice.html?sound=" + encodeURIComponent(pkey) + "\">Practice this sound</a>";
+      } else {
+        extra.className = "meta";
+        extra.textContent = "Phil will practice this sound with you in your live sessions.";
+      }
+      card.appendChild(extra);
       block.appendChild(card);
     });
 
