@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Word recording studio | Bespoken English</title>
+<style>
+  :root{--bg:#12141c;--card:#1d212d;--line:#2d3345;--text:#e8eaf2;--muted:#a3a9bd;--accent:#cfdcff;--ink:#1b2250;--rec:#ff6b6b;--ok:#7be0a5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+  h1{font:600 1.5rem Georgia,serif;margin:.2rem 0}
+  .muted{color:var(--muted)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#262b3a;color:var(--text);padding:10px 16px;min-height:46px}
+  button.primary{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:600}
+  button.rec{border-color:var(--rec);color:var(--rec);font-weight:600}
+  button.rec.live{background:var(--rec);color:#fff}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .big{font:700 4rem/1.1 Georgia,serif;text-align:center;margin:.3rem 0}
+  .cat{text-align:center;color:var(--muted);margin:0}
+  .bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:6px 0 2px}
+  .bar>i{display:block;height:100%;background:var(--ok);width:0}
+  .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:12px 0}
+  .status{text-align:center;min-height:1.6em}
+  .meter{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:6px auto;max-width:420px}
+  .meter>i{display:block;height:100%;width:0;background:var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+  .chip{padding:8px 6px;min-height:40px;text-align:center;font-size:.95rem}
+  .chip.done{border-color:var(--ok);color:var(--ok)}
+  .chip.cur{outline:2px solid var(--accent)}
+  label{display:inline-flex;align-items:center;gap:8px}
+  .hidden{display:none!important}
+  h2{font-size:1rem;margin:.2rem 0 .6rem;color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <h1>Word recording studio</h1>
+  <p class="muted">Record each practice word in your own voice. For staff use only; this page is not linked from the student site.</p>
+
+  <div class="panel" id="setup">
+    <strong>Before you start</strong>
+    <ul style="margin:.5rem 0 0 1.2rem;padding:0">
+      <li>Use a quiet room. Hold the same distance from the microphone every time.</li>
+      <li>Press <b>Record</b> (or the space bar). Wait for &ldquo;Say it now,&rdquo; say the word once, then stay quiet. The page stops by itself, so there is no button click in the recording.</li>
+      <li>Press <b>Play</b> to listen. Press <b>Keep &amp; next</b> (Enter) if it is good, or <b>Redo</b>.</li>
+      <li>Your takes are saved in this browser as you go. If the page closes, reopen it and continue.</li>
+    </ul>
+    <p class="row" style="justify-content:flex-start"><button class="primary" id="start" type="button">Start recording words</button></p>
+    <p class="status muted" id="startMsg"></p>
+  </div>
+
+  <section id="studio" class="hidden">
+    <div class="panel">
+      <p class="cat" id="cat"></p>
+      <div class="big" id="word">&nbsp;</div>
+      <div class="meter" aria-hidden="true"><i id="lvl"></i></div>
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="row">
+        <button class="rec" id="rec" type="button">Record</button>
+        <button id="play" type="button" disabled>Play</button>
+        <button class="primary" id="keep" type="button" disabled>Keep &amp; next</button>
+        <button id="redo" type="button" disabled>Redo</button>
+      </div>
+      <div class="row">
+        <button id="prev" type="button">&larr; Previous word</button>
+        <button id="skip" type="button">Skip &rarr;</button>
+      </div>
+      <div class="bar"><i id="barfill"></i></div>
+      <p class="muted" id="count" style="margin:2px 0 0;text-align:center"></p>
+    </div>
+
+    <div class="panel">
+      <h2>All words (click one to jump to it)</h2>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="panel">
+      <h2>When you are finished</h2>
+      <p class="muted" style="margin-top:0">Download the audio. Your recordings are not uploaded anywhere until you add the files to the website.</p>
+      <p class="row" style="justify-content:flex-start"><button class="primary" id="zip" type="button" disabled>Download all recordings (ZIP)</button></p>
+      <p class="status muted" id="zipMsg" style="text-align:left"></p>
+    </div>
+  </section>
+</main>
+
+<script src="lc-practice-words.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var OUT_RATE = 24000;           // output sample rate (speech does not need more)
+  var CAL_MS = 500;               // quiet time to measure room noise
+  var HOLD_MS = 800;              // silence after the word that ends the take
+  var MAX_MS = 7000;
+  var PAD_START = 0.12, PAD_END = 0.22; // seconds kept around the detected word
+
+  // ---- words (unique, in list order) ----
+  var words = [], cats = {};
+  Object.keys(window.LC_PRACTICE || {}).forEach(function (k) {
+    window.LC_PRACTICE[k].words.forEach(function (w) {
+      if (!cats[w]) { cats[w] = window.LC_PRACTICE[k].title; words.push(w); }
+    });
+  });
+
+  // ---- saved takes (IndexedDB, so a closed tab does not lose work) ----
+  var db = null, takes = {}; // word -> { blob, url }
+  function openDb() {
+    return new Promise(function (res) {
+      try {
+        var r = indexedDB.open('bespoken-word-studio', 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore('takes'); };
+        r.onsuccess = function () { db = r.result; res(); };
+        r.onerror = function () { res(); };
+      } catch (e) { res(); }
+    });
+  }
+  function dbAll() {
+    return new Promise(function (res) {
+      if (!db) return res();
+      var tx = db.transaction('takes'), st = tx.objectStore('takes'), keys = st.getAllKeys(), vals = st.getAll();
+      tx.oncomplete = function () {
+        keys.result.forEach(function (k, i) { setTake(k, vals.result[i], true); });
+        res();
+      };
+      tx.onerror = function () { res(); };
+    });
+  }
+  function dbPut(w, blob) { if (db) try { db.transaction('takes', 'readwrite').objectStore('takes').put(blob, w); } catch (e) {} }
+  function setTake(w, blob, silent) {
+    if (takes[w]) URL.revokeObjectURL(takes[w].url);
+    takes[w] = { blob: blob, url: URL.createObjectURL(blob) };
+  }
+
+  // ---- state ----
+  var idx = 0, pending = null; // pending = unsaved WAV blob for the current word
+  var ctx = null, stream = null, node = null, src = null, recording = false, chunks = [], floor = 0;
+
+  function cur() { return words[idx]; }
+  function doneCount() { return words.filter(function (w) { return takes[w]; }).length; }
+
+  function paint() {
+    var w = cur();
+    $('word').textContent = w;
+    $('cat').textContent = (idx + 1) + ' of ' + words.length + ' · ' + cats[w];
+    $('count').textContent = doneCount() + ' of ' + words.length + ' words kept';
+    $('barfill').style.width = (100 * doneCount() / words.length) + '%';
+    $('play').disabled = !(pending || takes[w]);
+    $('keep').disabled = !pending;
+    $('redo').disabled = !(pending || takes[w]);
+    $('zip').disabled = doneCount() === 0;
+    var g = $('grid'); g.innerHTML = '';
+    words.forEach(function (x, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (takes[x] ? ' done' : '') + (i === idx ? ' cur' : '');
+      b.textContent = (takes[x] ? '✓ ' : '') + x;
+      b.addEventListener('click', function () { go(i); });
+      g.appendChild(b);
+    });
+  }
+  function go(i) {
+    if (recording) return;
+    idx = Math.max(0, Math.min(words.length - 1, i)); pending = null;
+    $('status').textContent = takes[cur()] ? 'Already recorded. Press Play, or Record to replace it.' : 'Press Record when ready.';
+    paint();
+  }
+
+  // ---- microphone ----
+  async function ensureMic() {
+    if (stream) return true;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    } catch (e) {
+      $('startMsg').textContent = 'Please allow microphone access (microphone icon in the address bar) and try again.';
+      return false;
+    }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC();
+    src = ctx.createMediaStreamSource(stream);
+    node = ctx.createScriptProcessor(2048, 1, 1);
+    var mute = ctx.createGain(); mute.gain.value = 0;
+    src.connect(node); node.connect(mute); mute.connect(ctx.destination);
+    node.onaudioprocess = onAudio;
+    return true;
+  }
+
+  var t0 = 0, spoke = false, lastLoud = 0, noiseSum = 0, noiseN = 0, onsetThr = 0.02, endThr = 0.01;
+  function rms(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * a[i]; return Math.sqrt(s / a.length); }
+  function onAudio(e) {
+    if (!recording) return;
+    var d = e.inputBuffer.getChannelData(0), copy = new Float32Array(d);
+    var level = rms(copy), now = performance.now();
+    $('lvl').style.width = Math.min(100, level * 400) + '%';
+    chunks.push(copy);
+    var el = now - t0;
+    if (el < CAL_MS) { noiseSum += level; noiseN++; return; }
+    if (!floor) {
+      floor = noiseN ? noiseSum / noiseN : 0.003;
+      onsetThr = Math.max(floor * 4, 0.015);
+      endThr = Math.max(floor * 2.2, 0.007);
+      $('status').textContent = 'Say it now: “' + cur() + '”';
+    }
+    if (!spoke) {
+      if (level > onsetThr) { spoke = true; lastLoud = now; }
+    } else {
+      if (level > endThr) lastLoud = now;
+      if (now - lastLoud > HOLD_MS) finish();
+    }
+    if (el > MAX_MS) finish();
+  }
+
+  async function startRec() {
+    if (recording) { finish(); return; }
+    if (!(await ensureMic())) return;
+    if (ctx.state === 'suspended') await ctx.resume();
+    chunks = []; spoke = false; floor = 0; noiseSum = 0; noiseN = 0; pending = null;
+    t0 = performance.now(); recording = true;
+    $('rec').classList.add('live'); $('rec').textContent = 'Stop';
+    $('status').textContent = 'Getting ready… stay quiet for a moment.';
+    ['play', 'keep', 'redo'].forEach(function (id) { $(id).disabled = true; });
+  }
+
+  function finish() {
+    if (!recording) return;
+    recording = false;
+    $('rec').classList.remove('live'); $('rec').textContent = 'Record'; $('lvl').style.width = '0';
+    if (!spoke) { $('status').textContent = 'No voice heard. Check your microphone and try again.'; paint(); return; }
+    var wav = makeWav(chunks, ctx.sampleRate);
+    chunks = [];
+    if (!wav) { $('status').textContent = 'That take was too short. Please record again.'; paint(); return; }
+    pending = wav;
+    $('status').textContent = 'Recorded. Press Play to listen, then Keep & next (or Redo).';
+    paint();
+    playBlob(wav);
+  }
+
+  // ---- trim, level, resample, WAV encode ----
+  function makeWav(parts, rate) {
+    var n = 0; parts.forEach(function (p) { n += p.length; });
+    var all = new Float32Array(n), o = 0; parts.forEach(function (p) { all.set(p, o); o += p.length; });
+    var skip = Math.floor(rate * CAL_MS / 1000); // drop the calibration second-half noise before the cue
+    // find first/last samples above threshold (50 ms windows)
+    var win = Math.floor(rate * 0.02), first = -1, last = -1;
+    for (var i = skip; i + win < all.length; i += win) {
+      var s = 0; for (var j = 0; j < win; j++) s += all[i + j] * all[i + j];
+      var r = Math.sqrt(s / win);
+      if (r > endThr) { if (first < 0 && r > onsetThr * 0.6) first = i; last = i + win; }
+    }
+    if (first < 0) return null;
+    var a = Math.max(0, first - Math.floor(rate * PAD_START));
+    var b = Math.min(all.length, last + Math.floor(rate * PAD_END));
+    var seg = all.subarray(a, b);
+    if (seg.length < rate * 0.12) return null;
+    // resample (box average, then linear) to OUT_RATE
+    var ratio = rate / OUT_RATE, outLen = Math.floor(seg.length / ratio), out = new Float32Array(outLen);
+    for (var k = 0; k < outLen; k++) {
+      var p0 = k * ratio, p1 = Math.min(seg.length, (k + 1) * ratio), acc = 0, c = 0;
+      for (var m = Math.floor(p0); m < Math.ceil(p1); m++) { acc += seg[m]; c++; }
+      out[k] = c ? acc / c : 0;
+    }
+    // normalise to about -1 dBFS, fade 15 ms at both ends
+    var peak = 0; for (var q = 0; q < out.length; q++) peak = Math.max(peak, Math.abs(out[q]));
+    var gain = peak > 0 ? 0.89 / peak : 1, fadeN = Math.floor(OUT_RATE * 0.015);
+    for (var z = 0; z < out.length; z++) {
+      var g = gain;
+      if (z < fadeN) g *= z / fadeN;
+      if (out.length - z < fadeN) g *= (out.length - z) / fadeN;
+      out[z] *= g;
+    }
+    // 16-bit mono PCM WAV
+    var buf = new ArrayBuffer(44 + out.length * 2), v = new DataView(buf);
+    function str(off, t) { for (var x = 0; x < t.length; x++) v.setUint8(off + x, t.charCodeAt(x)); }
+    str(0, 'RIFF'); v.setUint32(4, 36 + out.length * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, OUT_RATE, true); v.setUint32(28, OUT_RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    str(36, 'data'); v.setUint32(40, out.length * 2, true);
+    for (var y = 0; y < out.length; y++) { var sm = Math.max(-1, Math.min(1, out[y])); v.setInt16(44 + y * 2, sm < 0 ? sm * 0x8000 : sm * 0x7fff, true); }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  function playBlob(blob) {
+    var u = URL.createObjectURL(blob), a = new Audio(u);
+    a.onended = function () { URL.revokeObjectURL(u); };
+    a.play().catch(function () {});
+  }
+
+  // ---- buttons ----
+  $('start').addEventListener('click', async function () {
+    $('startMsg').textContent = 'Checking your microphone…';
+    if (!(await ensureMic())) return;
+    $('setup').classList.add('hidden'); $('studio').classList.remove('hidden');
+    go(Math.max(0, words.findIndex(function (w) { return !takes[w]; })));
+  });
+  $('rec').addEventListener('click', startRec);
+  $('play').addEventListener('click', function () { var b = pending || (takes[cur()] && takes[cur()].blob); if (b) playBlob(b); });
+  $('keep').addEventListener('click', function () {
+    if (!pending) return;
+    setTake(cur(), pending); dbPut(cur(), pending); pending = null;
+    if (idx < words.length - 1) go(idx + 1); else { $('status').textContent = 'All words recorded. Download your ZIP below.'; paint(); }
+  });
+  $('redo').addEventListener('click', function () { pending = null; $('status').textContent = 'Press Record to try again.'; paint(); });
+  $('prev').addEventListener('click', function () { go(idx - 1); });
+  $('skip').addEventListener('click', function () { go(idx + 1); });
+  document.addEventListener('keydown', function (e) {
+    if ($('studio').classList.contains('hidden')) return;
+    if (e.target && /input|textarea/i.test(e.target.tagName)) return;
+    if (e.code === 'Space') { e.preventDefault(); startRec(); }
+    else if (e.code === 'Enter' && !$('keep').disabled) { e.preventDefault(); $('keep').click(); }
+  });
+  $('zip').addEventListener('click', async function () {
+    if (!window.JSZip) { $('zipMsg').textContent = 'The ZIP tool could not load. Check your internet connection and reload the page.'; return; }
+    var z = new JSZip(), f = z.folder('words'), n = 0;
+    words.forEach(function (w) { if (takes[w]) { f.file(w + '.wav', takes[w].blob); n++; } });
+    var blob = await z.generateAsync({ type: 'blob' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bespoken-practice-words.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    $('zipMsg').textContent = 'Downloaded ' + n + ' recordings (' + Math.round(blob.size / 1024) + ' KB).';
+  });
+
+  openDb().then(dbAll).then(function () { paint(); if (doneCount()) $('startMsg').textContent = doneCount() + ' words already recorded. Press Start to continue.'; });
+})();
+</script>
+</body>
+</html>
