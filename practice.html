@@ -87,7 +87,10 @@
   var voice = null;
   function pickVoice() {
     var vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-    voice = vs.filter(function (v) { return /^en[-_]US$/i.test(v.lang); })[0] ||
+    // Prefer a higher-quality en-US voice; skip "compact" voices. Falls back to the earlier behavior.
+    var us = vs.filter(function (v) { return /^en[-_]US$/i.test(v.lang) && !/compact/i.test(v.name); });
+    voice = us.filter(function (v) { return /google|natural|enhanced|premium/i.test(v.name); })[0] || us[0] ||
+            vs.filter(function (v) { return /^en[-_]US$/i.test(v.lang); })[0] ||
             vs.filter(function (v) { return /^en/i.test(v.lang); })[0] || null;
   }
   if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
@@ -124,6 +127,46 @@
       a.play().catch(function () { resolve(false); });
     });
   }
+  // Play the student's own try through Web Audio: 25 ms fade-in/out and at most the last 100 ms trimmed
+  // (keeps the release of final b/d). Falls back to the plain audio element if anything fails.
+  var audioCtx = null;
+  function getCtx() {
+    if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { try { audioCtx = new AC(); } catch (e) { audioCtx = null; } } }
+    return audioCtx;
+  }
+  function decodeBlob(ctx, blob) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { ctx.decodeAudioData(fr.result, resolve, reject); };
+      fr.onerror = reject;
+      fr.readAsArrayBuffer(blob);
+    });
+  }
+  async function playAttempt(att) {
+    var ctx = getCtx();
+    if (!ctx || !att.blob) return playUrl(att.url);
+    try {
+      if (ctx.state === 'suspended') await ctx.resume();
+      if (ctx.state !== 'running') return playUrl(att.url);
+      if (!att.buf) att.buf = await decodeBlob(ctx, att.blob);
+      var d = att.buf.duration;
+      var len = d > 0.5 ? d - 0.1 : d;
+      var fade = Math.min(0.025, len / 2);
+      return await new Promise(function (resolve) {
+        var src = ctx.createBufferSource(), g = ctx.createGain(), t0 = ctx.currentTime + 0.02;
+        src.buffer = att.buf;
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(1, t0 + fade);
+        g.gain.setValueAtTime(1, t0 + len - fade);
+        g.gain.linearRampToValueAtTime(0, t0 + len);
+        src.connect(g); g.connect(ctx.destination);
+        src.onended = function () { resolve(true); };
+        src.start(t0, 0, len);
+      });
+    } catch (e) {
+      return playUrl(att.url);
+    }
+  }
   async function compare(word, statusEl) {
     var att = attempts[word];
     if (!att) return;
@@ -131,7 +174,7 @@
     await speak(word);
     await new Promise(function (r) { setTimeout(r, 350); });
     statusEl.textContent = 'Your try…';
-    await playUrl(att.url);
+    await playAttempt(att);
     statusEl.className = 'status ok';
     statusEl.textContent = 'Compare the two. Record again if you want to improve it.';
   }
@@ -144,6 +187,7 @@
       return;
     }
     try {
+      getCtx(); // create the audio context during the click so playback is allowed
       speechSynthesis && speechSynthesis.cancel();
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (e) {
@@ -160,7 +204,7 @@
       btn.classList.remove('live'); btn.textContent = 'Record'; liveBtn = null;
       var blob = new Blob(chunks, { type: recorder.mimeType || mt || 'audio/webm' });
       if (attempts[word]) URL.revokeObjectURL(attempts[word].url);
-      attempts[word] = { url: URL.createObjectURL(blob) };
+      attempts[word] = { url: URL.createObjectURL(blob), blob: blob };
       compareBtn.disabled = false;
       compare(word, statusEl);
     };
