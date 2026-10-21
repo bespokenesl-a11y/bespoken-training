@@ -15,6 +15,12 @@ window.LC_PRACTICE = {
     tip: "Touch the tip of your tongue behind your top teeth and voice the sound. Do not turn it into a t.",
     words: ["bed","red","need","speed","food","good","road","side","trade","made","paid","said","bad","mad","had","did","kid","head","wide","hood","load","mood","dead","bread","seed"]
   },
+  "z|final": {
+    title: "The z sound at the end of a word",
+    example: "nose",
+    tip: "Say it like s, but turn your voice on. You should feel a buzz on the tip of your tongue. Do not turn it into an s.",
+    words: ["nose","rose","hose","those","his","is","has","was","does","buzz","jazz","quiz","size","prize","wise","rise","noise","cheese","please","freeze","breeze","lose","choose","news","shoes","as","clothes","these"]
+  },
   "ɝ|vowel": {
     title: "The stressed “er” sound (as in girl and bird)",
     example: "girl",
