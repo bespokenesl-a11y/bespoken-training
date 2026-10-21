@@ -49,6 +49,7 @@
       <li>Press <b>Play</b> to listen. Press <b>Keep &amp; next</b> (Enter) if it is good, or <b>Redo</b>.</li>
       <li>Your takes are saved in this browser as you go. If the page closes, reopen it and continue.</li>
     </ul>
+    <p style="margin:.8rem 0 .2rem"><label>Microphone: <select id="devSetup"></select></label></p>
     <p class="row" style="justify-content:flex-start"><button class="primary" id="start" type="button">Start recording words</button></p>
     <p class="status muted" id="startMsg"></p>
   </div>
@@ -58,6 +59,7 @@
       <p class="cat" id="cat"></p>
       <div class="big" id="word">&nbsp;</div>
       <div class="meter" aria-hidden="true"><i id="lvl"></i></div>
+      <p class="muted" style="text-align:center;margin:0;font-size:.9rem"><label>Microphone: <select id="dev"></select></label> <span id="lvlTxt"></span></p>
       <div class="status" id="status" aria-live="polite"></div>
       <div class="row">
         <button class="rec" id="rec" type="button">Record</button>
@@ -80,8 +82,9 @@
 
     <div class="panel">
       <h2>When you are finished</h2>
-      <p class="muted" style="margin-top:0">Download the audio. Your recordings are not uploaded anywhere until you add the files to the website.</p>
-      <p class="row" style="justify-content:flex-start"><button class="primary" id="zip" type="button" disabled>Download all recordings (ZIP)</button></p>
+      <p class="muted" style="margin-top:0">Download the audio. Your recordings are not uploaded anywhere until you add the files to the website. GitHub accepts about 100 files per upload, so pick one sound at a time, or download everything in parts.</p>
+      <p style="margin:.4rem 0"><label>Download: <select id="grp"></select></label></p>
+      <p class="row" style="justify-content:flex-start"><button class="primary" id="zip" type="button" disabled>Download ZIP</button></p>
       <p class="status muted" id="zipMsg" style="text-align:left"></p>
     </div>
   </section>
@@ -153,6 +156,7 @@
     $('keep').disabled = !pending;
     $('redo').disabled = !(pending || takes[w]);
     $('zip').disabled = doneCount() === 0;
+    fillGroups();
     var g = $('grid'); g.innerHTML = '';
     words.forEach(function (x, i) {
       var b = document.createElement('button');
@@ -170,10 +174,35 @@
   }
 
   // ---- microphone ----
+  var devId = '';
+  function micLabel() { var t = stream && stream.getAudioTracks()[0]; return t ? (t.label || 'default') : 'none'; }
+  async function listDevices() {
+    try {
+      var all = await navigator.mediaDevices.enumerateDevices();
+      var ins = all.filter(function (d) { return d.kind === 'audioinput'; });
+      var curId = stream && stream.getAudioTracks()[0] && stream.getAudioTracks()[0].getSettings().deviceId;
+      ['dev', 'devSetup'].forEach(function (id) {
+        var sel = $(id); sel.innerHTML = '';
+        ins.forEach(function (d, i) {
+          var o = document.createElement('option'); o.value = d.deviceId; o.textContent = d.label || ('Microphone ' + (i + 1));
+          if (d.deviceId === curId) o.selected = true; sel.appendChild(o);
+        });
+      });
+    } catch (e) {}
+  }
+  function closeMic() {
+    try { node && node.disconnect(); src && src.disconnect(); } catch (e) {}
+    if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+    if (ctx) try { ctx.close(); } catch (e) {}
+    stream = ctx = node = src = null;
+  }
+  async function switchMic(id) { if (recording) return; devId = id; closeMic(); if (await ensureMic()) $('status').textContent = 'Using: ' + micLabel(); }
   async function ensureMic() {
     if (stream) return true;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+      var c = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 };
+      if (devId) c.deviceId = { exact: devId };
+      stream = await navigator.mediaDevices.getUserMedia({ audio: c });
     } catch (e) {
       $('startMsg').textContent = 'Please allow microphone access (microphone icon in the address bar) and try again.';
       return false;
@@ -185,23 +214,25 @@
     var mute = ctx.createGain(); mute.gain.value = 0;
     src.connect(node); node.connect(mute); mute.connect(ctx.destination);
     node.onaudioprocess = onAudio;
+    listDevices();
     return true;
   }
 
-  var t0 = 0, spoke = false, lastLoud = 0, noiseSum = 0, noiseN = 0, onsetThr = 0.02, endThr = 0.01;
+  var t0 = 0, spoke = false, lastLoud = 0, noiseSum = 0, noiseN = 0, onsetThr = 0.004, endThr = 0.0025, maxLevel = 0;
   function rms(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * a[i]; return Math.sqrt(s / a.length); }
   function onAudio(e) {
     if (!recording) return;
     var d = e.inputBuffer.getChannelData(0), copy = new Float32Array(d);
     var level = rms(copy), now = performance.now();
-    $('lvl').style.width = Math.min(100, level * 400) + '%';
+    $('lvl').style.width = Math.min(100, level * 600) + '%';
+    if (level > maxLevel) maxLevel = level;
     chunks.push(copy);
     var el = now - t0;
     if (el < CAL_MS) { noiseSum += level; noiseN++; return; }
     if (!floor) {
       floor = noiseN ? noiseSum / noiseN : 0.003;
-      onsetThr = Math.max(floor * 4, 0.015);
-      endThr = Math.max(floor * 2.2, 0.007);
+      onsetThr = Math.max(floor * 3, 0.004);
+      endThr = Math.max(floor * 1.8, 0.0025);
       $('status').textContent = 'Say it now: “' + cur() + '”';
     }
     if (!spoke) {
@@ -217,7 +248,7 @@
     if (recording) { finish(); return; }
     if (!(await ensureMic())) return;
     if (ctx.state === 'suspended') await ctx.resume();
-    chunks = []; spoke = false; floor = 0; noiseSum = 0; noiseN = 0; pending = null;
+    chunks = []; spoke = false; floor = 0; noiseSum = 0; noiseN = 0; maxLevel = 0; pending = null;
     t0 = performance.now(); recording = true;
     $('rec').classList.add('live'); $('rec').textContent = 'Stop';
     $('status').textContent = 'Getting ready… stay quiet for a moment.';
@@ -228,7 +259,7 @@
     if (!recording) return;
     recording = false;
     $('rec').classList.remove('live'); $('rec').textContent = 'Record'; $('lvl').style.width = '0';
-    if (!spoke) { $('status').textContent = 'No voice heard. Check your microphone and try again.'; paint(); return; }
+    if (!spoke) { $('status').textContent = 'No voice heard (loudest sound ' + (maxLevel * 100).toFixed(1) + ' on a 0 to 100 scale, microphone: ' + micLabel() + '). Check the microphone choice above, or speak a little louder or closer, then try again.'; paint(); return; }
     var wav = makeWav(chunks, ctx.sampleRate);
     chunks = [];
     if (!wav) { $('status').textContent = 'That take was too short. Please record again.'; paint(); return; }
@@ -293,8 +324,11 @@
     $('startMsg').textContent = 'Checking your microphone…';
     if (!(await ensureMic())) return;
     $('setup').classList.add('hidden'); $('studio').classList.remove('hidden');
+    $('lvlTxt').textContent = '';
     go(Math.max(0, words.findIndex(function (w) { return !takes[w]; })));
   });
+  $('dev').addEventListener('change', function () { switchMic(this.value); });
+  $('devSetup').addEventListener('change', function () { switchMic(this.value); });
   $('rec').addEventListener('click', startRec);
   $('play').addEventListener('click', function () { var b = pending || (takes[cur()] && takes[cur()].blob); if (b) playBlob(b); });
   $('keep').addEventListener('click', function () {
@@ -311,14 +345,51 @@
     if (e.code === 'Space') { e.preventDefault(); startRec(); }
     else if (e.code === 'Enter' && !$('keep').disabled) { e.preventDefault(); $('keep').click(); }
   });
+  function fillGroups() {
+    var sel = $('grp'), keep = sel.value; sel.innerHTML = '';
+    var titles = [];
+    words.forEach(function (w) { if (titles.indexOf(cats[w]) < 0) titles.push(cats[w]); });
+    titles.forEach(function (t, i) {
+      var have = words.filter(function (w) { return cats[w] === t && takes[w]; }).length;
+      var all = words.filter(function (w) { return cats[w] === t; }).length;
+      var o = document.createElement('option'); o.value = 'g' + i; o.textContent = t + ' (' + have + ' of ' + all + ' recorded)'; sel.appendChild(o);
+    });
+    var o2 = document.createElement('option'); o2.value = 'all'; o2.textContent = 'Everything, split into parts of 80 files'; sel.appendChild(o2);
+    sel._titles = titles;
+    if (keep) sel.value = keep;
+    else {
+      var firstOpen = titles.findIndex(function (t) { return words.some(function (w) { return cats[w] === t && !takes[w]; }); });
+      var lastDone = -1; titles.forEach(function (t, i) { if (words.some(function (w) { return cats[w] === t && takes[w]; })) lastDone = i; });
+      sel.value = 'g' + Math.max(0, lastDone);
+    }
+  }
+  async function saveZip(list, name) {
+    var z = new JSZip(), f = z.folder('words');
+    list.forEach(function (w) { f.file(w + '.wav', takes[w].blob); });
+    var blob = await z.generateAsync({ type: 'blob' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    return Math.round(blob.size / 1024);
+  }
   $('zip').addEventListener('click', async function () {
     if (!window.JSZip) { $('zipMsg').textContent = 'The ZIP tool could not load. Check your internet connection and reload the page.'; return; }
-    var z = new JSZip(), f = z.folder('words'), n = 0;
-    words.forEach(function (w) { if (takes[w]) { f.file(w + '.wav', takes[w].blob); n++; } });
-    var blob = await z.generateAsync({ type: 'blob' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bespoken-practice-words.zip';
-    document.body.appendChild(a); a.click(); a.remove();
-    $('zipMsg').textContent = 'Downloaded ' + n + ' recordings (' + Math.round(blob.size / 1024) + ' KB).';
+    var sel = $('grp'), v = sel.value, msg = [];
+    if (v === 'all') {
+      var have = words.filter(function (w) { return takes[w]; });
+      for (var i = 0; i < have.length; i += 80) {
+        var part = have.slice(i, i + 80), n = i / 80 + 1;
+        var kb = await saveZip(part, 'bespoken-practice-words-part' + n + '.zip');
+        msg.push('Part ' + n + ': ' + part.length + ' files (' + kb + ' KB)');
+        await new Promise(function (r) { setTimeout(r, 600); });
+      }
+    } else {
+      var t = sel._titles[parseInt(v.slice(1), 10)];
+      var list = words.filter(function (w) { return cats[w] === t && takes[w]; });
+      if (!list.length) { $('zipMsg').textContent = 'No recordings for that sound yet.'; return; }
+      var kb2 = await saveZip(list, 'bespoken-words-' + v + '.zip');
+      msg.push(list.length + ' files (' + kb2 + ' KB)');
+    }
+    $('zipMsg').textContent = 'Downloaded. ' + msg.join('; ') + '. Unzip, open the words folder, and upload those files.';
   });
 
   openDb().then(dbAll).then(function () { paint(); if (doneCount()) $('startMsg').textContent = doneCount() + ' words already recorded. Press Start to continue.'; });
