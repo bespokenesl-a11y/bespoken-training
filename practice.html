@@ -109,7 +109,7 @@
   }
 
   // ---- model audio: Phil's recordings first, browser voice as a fallback ----
-  var AUDIO_DIR = 'audio/words/';
+  var AUDIO_DIR = 'audio/';
   var missing = {};     // words with no recording file
   function playWord(word) {
     if (missing[word]) return speak(word);
