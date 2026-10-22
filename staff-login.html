@@ -144,6 +144,12 @@
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxY3doc3hhYXdtcmNrYmdsY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwMTAsImV4cCI6MjA5OTE4MzAxMH0.Po9nINJ7rWtnP_iH6jyg322MvgW4ayrXLFbyJVrn8b4";
   var STORAGE_KEY = "bt-session";
 
+  // Reset emails sent from this page come back to this exact page (it must
+  // also be listed under Supabase Redirect URLs). Anyone who resets here but
+  // turns out not to be staff is sent on to the student page afterwards.
+  var STAFF_PAGE_URL = "https://bespokenesl-a11y.github.io/bespoken-training/staff-login.html";
+  var STUDENT_PAGE_URL = "https://bespokenesl-a11y.github.io/bespoken-training/index.html";
+
   function saveSession(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
   function loadSession(){
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); }
@@ -196,7 +202,7 @@
     document.getElementById("becomeBox").classList.toggle("hidden");
   });
 
-  function routeByRole(profile){
+  function routeByRole(profile, fromRecovery){
     if (profile && profile.is_admin){
       location.href = "admin.html";
     } else if (profile && profile.is_trainer){
@@ -205,6 +211,12 @@
       tryClaimTrainerApproval().then(function(claimed){
         if (claimed){
           location.href = "trainer.html";
+          return;
+        }
+        // A student who reset their password from this page is already
+        // signed in (the session is shared), so take them to their own page.
+        if (fromRecovery){
+          location.href = STUDENT_PAGE_URL;
           return;
         }
         showChecking(false);
@@ -390,8 +402,7 @@
     var msgEl = document.getElementById("forgotMsg");
     if (!email){ showMsg(msgEl, "Enter your email first.", true); return; }
     btn.disabled = true; btn.textContent = "Sending…";
-    var redirectTo = location.origin + location.pathname;
-    fetch(SUPABASE_URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(redirectTo), {
+    fetch(SUPABASE_URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(STAFF_PAGE_URL), {
       method: "POST",
       headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email: email })
@@ -462,7 +473,7 @@
       showChecking(true);
       authFetch("/rest/v1/profiles?id=eq." + encodeURIComponent(result.data.id) + "&select=is_admin,is_trainer")
         .then(function(r){ return r.json(); })
-        .then(function(rows){ routeByRole(rows[0]); });
+        .then(function(rows){ routeByRole(rows[0], true); });
     }).catch(function(){
       showMsg(msgEl, "Something went wrong reaching the server.", true);
       btn.disabled = false; btn.textContent = "Save new password";
