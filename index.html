@@ -146,6 +146,7 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 <div class="card hidden" id="recoveryCard">
 <h1>Set a new password</h1>
 <p class="sub">Choose a new password for your account. You'll be signed in automatically once it's saved.</p>
+<div id="recFields">
 <label for="rec-pw">New password</label>
 <div class="pw-wrap">
 <input type="password" id="rec-pw" autocomplete="new-password" placeholder="At least 8 characters">
@@ -157,7 +158,14 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 <button type="button" class="pw-toggle" id="rec-pw2-toggle">Show</button>
 </div>
 <button class="btn" id="recoverySaveBtn">Save new password</button>
+</div>
 <div class="msg" id="recoveryMsg"></div>
+<div class="inline-box hidden" id="recNewLinkBox">
+<label for="rec-new-email" style="margin-top:0;">Email address</label>
+<input type="email" id="rec-new-email">
+<button class="btn" id="recNewLinkBtn" style="margin-top:12px;">Send a new link</button>
+<div class="msg" id="recNewLinkMsg"></div>
+</div>
 </div>
 
 <!-- ===== Signed-in: dashboard ===== -->
@@ -192,6 +200,62 @@ background:var(--ice);color:var(--navy);font-weight:700;font-size:15px;cursor:po
 var SUPABASE_URL = 'https://zqcwhsxaawmrckbglcim.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_0x-TxeUzQaB1_rsP7bnrRw_jBR9icOD';
 var STORAGE_KEY = 'bt-session';
+
+// Reset emails always come back to this exact page. It must also be listed
+// under Supabase → Authentication → URL Configuration → Redirect URLs, or
+// Supabase silently falls back to the project's Site URL instead.
+var STUDENT_PAGE_URL = 'https://bespokenesl-a11y.github.io/bespoken-training/index.html';
+var RECOVERY_FLAG = 'bt-recovery-pending';
+
+// ---- password recovery (from the "reset password" email link). Read the
+// hash before anything else on the page — before the saved-session check and
+// before any return_to handling — so a recovery link always lands on the
+// "Set a new password" form and is never redirected anywhere else. ----
+function parseRecoveryHash(){
+var hash = location.hash || '';
+var params = new URLSearchParams(hash.replace(/^#/, ''));
+if (hash.indexOf('type=recovery') !== -1 && params.get('access_token')){
+return { tokens: {
+access_token: params.get('access_token'),
+refresh_token: params.get('refresh_token'),
+expires_in: parseInt(params.get('expires_in'), 10) || 3600
+}};
+}
+// An expired or already-used link comes back as #error=...&error_code=otp_expired
+if (params.get('error_code') || params.get('error')){
+return { error: params.get('error_description') || params.get('error_code') || params.get('error') };
+}
+return null;
+}
+
+function setRecoveryFlag(on){
+try{
+if (on) sessionStorage.setItem(RECOVERY_FLAG, '1');
+else sessionStorage.removeItem(RECOVERY_FLAG);
+}catch(e){ /* private mode: the form still shows for this page load */ }
+}
+function hasRecoveryFlag(){
+try{ return sessionStorage.getItem(RECOVERY_FLAG) === '1'; }catch(e){ return false; }
+}
+
+var recoveryLink = parseRecoveryHash();
+if (recoveryLink){
+// Tokens must not linger in the address bar, history, or a copied link.
+history.replaceState(null, '', location.pathname + location.search);
+if (recoveryLink.tokens){
+saveSession({
+access_token: recoveryLink.tokens.access_token,
+refresh_token: recoveryLink.tokens.refresh_token,
+expires_in: recoveryLink.tokens.expires_in,
+issued_at: Date.now(),
+user: null
+});
+// Survives a reload, so the student still gets the form rather than
+// being dropped onto the dashboard with their old password unchanged.
+setRecoveryFlag(true);
+}
+}
+var recoveryPending = !!(recoveryLink && recoveryLink.tokens) || hasRecoveryFlag();
 
 // ---- return_to allowlist: after sign-in, session tokens are only ever handed
 // to these exact hosts (https only). Anything else is ignored. Relative links
@@ -312,15 +376,13 @@ emailField.value = document.getElementById('li-email').value.trim();
 }
 }
 };
-document.getElementById('forgotSendBtn').onclick = async function(){
-var btn = this;
-var email = document.getElementById('forgot-email').value.trim();
-var msgEl = document.getElementById('forgotMsg');
+// Shared by the "Forgot password?" box and the "Send a new link" box on the
+// recovery form.
+async function sendResetLink(email, btn, msgEl, label){
 if(!email){ showMsg(msgEl, 'Enter your email first.', true); return; }
 btn.disabled = true; btn.textContent = 'Sending…';
 try{
-var redirectTo = location.origin + location.pathname;
-var res = await fetch(SUPABASE_URL + '/auth/v1/recover?redirect_to=' + encodeURIComponent(redirectTo), {
+var res = await fetch(SUPABASE_URL + '/auth/v1/recover?redirect_to=' + encodeURIComponent(STUDENT_PAGE_URL), {
 method: 'POST',
 headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
 body: JSON.stringify({ email: email })
@@ -335,7 +397,10 @@ showMsg(msgEl, 'Something went wrong sending that. Please try again.', true);
 }catch(e){
 showMsg(msgEl, 'Something went wrong reaching the server.', true);
 }
-btn.disabled = false; btn.textContent = 'Send reset link';
+btn.disabled = false; btn.textContent = label;
+}
+document.getElementById('forgotSendBtn').onclick = function(){
+sendResetLink(document.getElementById('forgot-email').value.trim(), this, document.getElementById('forgotMsg'), 'Send reset link');
 };
 
 // ---- sign up ----
@@ -491,6 +556,7 @@ await applyPendingProfile(1);
 
 document.getElementById('signoutBtn').onclick = function(){
 clearSession();
+setRecoveryFlag(false);
 location.reload();
 };
 
@@ -696,21 +762,36 @@ document.getElementById('dashCard').appendChild(goBtn);
 }
 }
 
-// ---- password recovery (from the "reset password" email link) ----
-function parseRecoveryHash(){
-var hash = location.hash || '';
-if (hash.indexOf('type=recovery') === -1) return null;
-var params = new URLSearchParams(hash.replace(/^#/, ''));
-var at = params.get('access_token');
-if (!at) return null;
-return {
-access_token: at,
-refresh_token: params.get('refresh_token'),
-expires_in: parseInt(params.get('expires_in'), 10) || 3600
+// ---- "Set a new password" form ----
+function showNewLinkOption(){
+var s = loadSession();
+var emailField = document.getElementById('rec-new-email');
+if (!emailField.value && s && s.user && s.user.email) emailField.value = s.user.email;
+document.getElementById('recNewLinkBox').classList.remove('hidden');
+}
+document.getElementById('recNewLinkBtn').onclick = function(){
+sendResetLink(document.getElementById('rec-new-email').value.trim(), this, document.getElementById('recNewLinkMsg'), 'Send a new link');
 };
+
+// The recovery session has no user details yet; fill them in so the email
+// box and the dashboard can use them.
+async function loadRecoveryUser(){
+try{
+var res = await authFetch('/auth/v1/user');
+if(!res.ok) return;
+var user = await res.json();
+var s = loadSession();
+if(s){ s.user = user; saveSession(s); }
+var emailField = document.getElementById('rec-new-email');
+if(!emailField.value && user.email) emailField.value = user.email;
+}catch(e){ /* not fatal — the save step returns the user too */ }
 }
 
-var recoveryTokens = parseRecoveryHash();
+function isExpiredError(status, data){
+var code = data && data.error_code;
+return status === 401 || status === 403 ||
+code === 'bad_jwt' || code === 'session_expired' || code === 'session_not_found' || code === 'otp_expired';
+}
 
 document.getElementById('recoverySaveBtn').onclick = async function(){
 var btn = this;
@@ -720,43 +801,62 @@ var msgEl = document.getElementById('recoveryMsg');
 if (pw1.length < 8){ showMsg(msgEl, 'Password must be at least 8 characters.', true); return; }
 if (pw1 !== pw2){ showMsg(msgEl, "Passwords don't match.", true); return; }
 
+var session = loadSession();
+if (!session || !session.access_token){
+showMsg(msgEl, 'This reset link is no longer active. Send yourself a new one below.', true);
+showNewLinkOption();
+return;
+}
+
 btn.disabled = true; btn.textContent = 'Saving…';
 try{
 var res = await fetch(SUPABASE_URL + '/auth/v1/user', {
 method: 'PUT',
 headers: {
 'apikey': SUPABASE_ANON_KEY,
-'Authorization': 'Bearer ' + recoveryTokens.access_token,
+'Authorization': 'Bearer ' + session.access_token,
 'Content-Type': 'application/json'
 },
 body: JSON.stringify({ password: pw1 })
 });
-var data = await res.json();
+var data = await res.json().catch(function(){ return {}; });
 if(!res.ok){
-showMsg(msgEl, data.msg || data.error_description || 'Could not update your password. The reset link may have expired — request a new one.', true);
+// Show Supabase's own reason (e.g. "Password should be at least 6
+// characters.", "token is expired") rather than a generic guess.
+var reason = data.msg || data.message || data.error_description || data.error || ('Error ' + res.status);
+showMsg(msgEl, isExpiredError(res.status, data)
+? 'Your reset link has expired or was already used (' + reason + '). Send yourself a new link below.'
+: 'Your password wasn\'t saved: ' + reason, true);
+showNewLinkOption();
 btn.disabled = false; btn.textContent = 'Save new password';
 return;
 }
-saveSession({
-access_token: recoveryTokens.access_token,
-refresh_token: recoveryTokens.refresh_token,
-expires_in: recoveryTokens.expires_in,
-issued_at: Date.now(),
-user: data
-});
+session.user = data;
+session.issued_at = session.issued_at || Date.now();
+saveSession(session);
+setRecoveryFlag(false);
+showMsg(msgEl, 'All set — your new password is saved. Taking you to your dashboard…', false);
+btn.textContent = 'Saved';
 await applyPendingProfile();
-enterDashboard();
+setTimeout(enterDashboard, 1500);
 }catch(e){
-showMsg(msgEl, 'Something went wrong reaching the server.', true);
+showMsg(msgEl, 'Something went wrong reaching the server. Please try again.', true);
 btn.disabled = false; btn.textContent = 'Save new password';
 }
 };
 
 // ---- boot ----
-if (recoveryTokens){
-history.replaceState(null, '', location.pathname + location.search);
+if (recoveryPending || (recoveryLink && recoveryLink.error)){
 document.getElementById('authCard').classList.add('hidden');
 document.getElementById('recoveryCard').classList.remove('hidden');
+if (recoveryPending){
+loadRecoveryUser();
+} else {
+document.getElementById('recFields').classList.add('hidden');
+showMsg(document.getElementById('recoveryMsg'),
+'That reset link has expired or was already used (' + recoveryLink.error + '). Send yourself a new link below.', true);
+showNewLinkOption();
+}
 } else {
 (async function init(){
 var session = await refreshIfNeeded();
