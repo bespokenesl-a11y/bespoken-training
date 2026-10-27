@@ -1,7 +1,8 @@
 // Language Clarity practice word lists (Bespoken English).
 // Key format: "<phoneme>|<position>" exactly as stored in language_clarity_sound_objectives.
 // Words are one syllable, except a few common two-syllable words Phil added on purpose
-// (e.g. thirty, something in "θ|initial"). For final consonants the target is a single consonant
+// (e.g. thirty, something in "θ|initial"; other, mother in "ð|initial"), including some
+// with the th in the middle of the word. For final consonants the target is a single consonant
 // right after a vowel (no final clusters). Edit freely: add, remove or reorder words.
 window.LC_PRACTICE = {
   "b|final": {
@@ -68,7 +69,7 @@ window.LC_PRACTICE = {
     title: "The voiced th at the start of a word (as in this)",
     example: "this",
     tip: "Put the tip of your tongue lightly between your teeth and turn your voice on. You should feel a buzz on your tongue. Do not turn it into a d or a z.",
-    words: ["the","this","that","these","those","then","than","they","them","there","their","though","thus"]
+    words: ["the","this","that","these","those","then","than","they","them","there","their","though","thus","therefore","although","other","another","mother","father","weather"]
   },
   "ð|final": {
     title: "The voiced th at the end of a word (as in bathe)",
