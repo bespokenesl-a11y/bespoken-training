@@ -50,5 +50,29 @@ window.LC_PRACTICE = {
     example: "chair",
     tip: "Start with the vowel in “bed”, then pull your tongue back and up for the r. Glide smoothly; it is one syllable, so do not add an extra “uh”.",
     words: ["air","care","chair","hair","pair","share","stair","wear","bear","dare","fair","square","where","rare","scare","spare","stare","glare","hare","fare","pear","swear","bare","flare","mare"]
+  },
+  "θ|initial": {
+    title: "The unvoiced th at the start of a word (as in think)",
+    example: "think",
+    tip: "Put the tip of your tongue lightly between your teeth and blow air out. Keep your voice off. Do not turn it into a t or an s.",
+    words: ["thin","thick","thing","think","thank","thumb","thought","theme","thief","thigh","thorn","thud","thaw","thatch","theft","thump","thug","third","thirst"]
+  },
+  "θ|final": {
+    title: "The unvoiced th at the end of a word (as in bath)",
+    example: "bath",
+    tip: "End with the tip of your tongue lightly between your teeth and let the air flow out softly. Keep your voice off. Do not turn it into a t, an f or an s.",
+    words: ["bath","path","math","both","teeth","tooth","mouth","south","faith","truth","youth","booth","oath","moth","cloth","breath","death","wreath","myth","growth","sloth","heath","sheath","broth","loath"]
+  },
+  "ð|initial": {
+    title: "The voiced th at the start of a word (as in this)",
+    example: "this",
+    tip: "Put the tip of your tongue lightly between your teeth and turn your voice on. You should feel a buzz on your tongue. Do not turn it into a d or a z.",
+    words: ["the","this","that","these","those","then","than","they","them","there","their","though","thus"]
+  },
+  "ð|final": {
+    title: "The voiced th at the end of a word (as in bathe)",
+    example: "bathe",
+    tip: "End with the tip of your tongue between your teeth and keep your voice on. Do not turn it into a d, a z or the unvoiced th. Compare breath (voice off) with breathe (voice on).",
+    words: ["bathe","clothe","breathe","smooth","soothe","loathe","teethe","seethe","writhe","lathe","tithe","scythe","sheathe","wreathe","with"]
   }
 };
