@@ -63,7 +63,7 @@ window.LC_PRACTICE = {
     title: "The unvoiced th at the end of a word (as in bath)",
     example: "bath",
     tip: "End with the tip of your tongue lightly between your teeth and let the air flow out softly. Keep your voice off. Do not turn it into a t, an f or an s.",
-    words: ["bath","path","math","both","teeth","tooth","mouth","south","faith","truth","youth","booth","oath","moth","cloth","breath","death","wreath","myth","growth","sloth","heath","sheath","broth","loath","with"]
+    words: ["bath","path","math","both","teeth","tooth","mouth","south","faith","truth","youth","booth","oath","moth","cloth","breath","death","wreath","myth","growth","sloth","sheath","broth","loath","with"]
   },
   "ð|initial": {
     title: "The voiced th at the start of a word (as in this)",
