@@ -390,7 +390,7 @@ function renderSounds(objectives){
       var pkey = o.phoneme + "|" + o.position;
       var hasList = window.LC_PRACTICE && window.LC_PRACTICE[pkey];
       var extra = document.createElement("div");
-      if (o.status === "assigned" && hasList){
+      if ((o.status === "assigned" || o.status === "practicing") && hasList){
         extra.className = "practice-row";
         extra.innerHTML = "<a class=\"btn\" href=\"practice.html?sound=" + encodeURIComponent(pkey) + "\">Practice this sound</a>";
       } else {
