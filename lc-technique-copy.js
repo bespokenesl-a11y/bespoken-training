@@ -89,12 +89,12 @@
       "on that difference constantly, and build each one up with practice words chosen to " +
       "isolate it.",
 
-    // REVIEW: Vowels+syllabic ɚ (ear/air/or/are) weren't named
+    // REVIEW: Vowels+syllabic ɚ (ear/air/or/are/fire/our) weren't named
     // individually on the source recording; drafted by extending the
     // Syllabic R and Diphthongs techniques together, since this category is
     // exactly that combination (a vowel gliding into the er sound).
     "Vowels+syllabic ɚ": "These are vowel sounds that glide directly into an “er” " +
-      "sound — “ear”, “air”, “or” and “are”. " +
+      "sound — “ear”, “air”, “or”, “are”, “fire” and “our”. " +
       "Because each one is built from a full vowel plus " +
       "that same syllabic-r glide, we build them the same way we build any discrimination pair " +
       "— comparing this sound against its closest neighbors until the distinction is clear " +

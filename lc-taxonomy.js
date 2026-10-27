@@ -74,7 +74,9 @@
     "iɚ": ["Vowels+syllabic ɚ", "‘ear’ as in ear"],
     "eɚ": ["Vowels+syllabic ɚ", "‘air’ as in air"],
     "oɚ": ["Vowels+syllabic ɚ", "‘or’ as in or"],
-    "aɚ": ["Vowels+syllabic ɚ", "‘ar’ as in are"]
+    "aɚ": ["Vowels+syllabic ɚ", "‘ar’ as in are"],
+    "aɪɚ": ["Vowels+syllabic ɚ", "‘ire’ as in fire"],
+    "aʊɚ": ["Vowels+syllabic ɚ", "‘our’ as in our"]
   };
 
   var CATEGORY_ORDER = [
