@@ -1,6 +1,7 @@
 // Language Clarity practice word lists (Bespoken English).
 // Key format: "<phoneme>|<position>" exactly as stored in language_clarity_sound_objectives.
-// Every word has ONE syllable. For final consonants the target is a single consonant
+// Words are one syllable, except a few common two-syllable words Phil added on purpose
+// (e.g. thirty, something in "θ|initial"). For final consonants the target is a single consonant
 // right after a vowel (no final clusters). Edit freely: add, remove or reorder words.
 window.LC_PRACTICE = {
   "b|final": {
@@ -55,7 +56,7 @@ window.LC_PRACTICE = {
     title: "The unvoiced th at the start of a word (as in think)",
     example: "think",
     tip: "Put the tip of your tongue lightly between your teeth and blow air out. Keep your voice off. Do not turn it into a t or an s.",
-    words: ["thin","thick","thing","think","thank","thumb","thought","theme","thief","thigh","thorn","thud","thaw","thatch","theft","thump","thug","third","thirst"]
+    words: ["thin","thick","thing","think","thank","thumb","thought","theme","thief","thigh","thorn","thud","thaw","thatch","theft","thump","thug","third","thirst","thirty","thousand","thesis","something","nothing"]
   },
   "θ|final": {
     title: "The unvoiced th at the end of a word (as in bath)",
