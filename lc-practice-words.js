@@ -15,6 +15,12 @@ window.LC_PRACTICE = {
     tip: "Touch the tip of your tongue behind your top teeth and voice the sound. Do not turn it into a t.",
     words: ["bed","red","need","speed","food","good","road","side","trade","made","paid","said","bad","mad","had","did","kid","head","wide","hood","load","mood","dead","bread","seed"]
   },
+  "g|final": {
+    title: "The g sound at the end of a word",
+    example: "bag",
+    tip: "Lift the back of your tongue to touch the roof of your mouth, voice the sound, and stop. Do not turn it into a k.",
+    words: ["bag","big","dog","leg","egg","pig","bug","rug","hug","mug","jog","log","fog","frog","flag","plug","dig","wig","beg","peg","tag","rag","drag","twig","league"]
+  },
   "z|final": {
     title: "The z sound at the end of a word",
     example: "nose",
@@ -26,5 +32,23 @@ window.LC_PRACTICE = {
     example: "girl",
     tip: "Pull your tongue back and up. Your lips are slightly rounded. Hold the sound; it is one smooth vowel, not a vowel plus an r.",
     words: ["girl","bird","work","word","turn","learn","serve","her","shirt","burn","nurse","curve","church","earth","fur","stir","sir","heard","fern","germ","jerk","term","firm","dirt","hurt","purr","blur","worm","worse","verb","urge","merge","surge","search","perch","birth","worth","purse","nerd","curl"]
+  },
+  "ʌ|vowel": {
+    title: "The short u sound (as in bus and cup)",
+    example: "bus",
+    tip: "Relax your mouth and open it a little. Keep the sound short. Do not round your lips and do not turn it into a long “ah”.",
+    words: ["bus","cup","sun","cut","but","fun","run","up","much","come","some","done","one","son","mud","duck","luck","hut","nut","shut","gum","tough","young","blood","love"]
+  },
+  "ɔɚ|vowel": {
+    title: "The “or” sound (as in door and four)",
+    example: "door",
+    tip: "Start with rounded lips as in “oh”, then pull your tongue back and up for the r. Glide smoothly; it is one syllable.",
+    words: ["or","for","more","door","four","store","born","corn","horse","short","port","sport","floor","shore","score","wore","torn","sort","core","pour","roar","sore","board","fork","form"]
+  },
+  "ɛɚ|vowel": {
+    title: "The “air” sound (as in chair and hair)",
+    example: "chair",
+    tip: "Start with the vowel in “bed”, then pull your tongue back and up for the r. Glide smoothly; it is one syllable, so do not add an extra “uh”.",
+    words: ["air","care","chair","hair","pair","share","stair","wear","bear","dare","fair","square","where","rare","scare","spare","stare","glare","hare","fare","pear","swear","bare","flare","mare"]
   }
 };
