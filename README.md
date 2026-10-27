@@ -22,5 +22,5 @@ Student and staff training pages for Bespoken English, an online English trainin
 
 ## Audio
 
-The `.wav` files at the root and in `audio/` are recordings of the practice words.
+The `.wav` files in `audio/` are recordings of the practice words. Upload new recordings into that folder; the practice page only looks there.
 
