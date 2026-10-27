@@ -41,13 +41,13 @@ window.LC_PRACTICE = {
     tip: "Relax your mouth and open it a little. Keep the sound short. Do not round your lips and do not turn it into a long “ah”.",
     words: ["bus","cup","sun","cut","but","fun","run","up","much","come","some","done","one","son","mud","duck","luck","hut","nut","shut","gum","tough","young","blood","love"]
   },
-  "ɔɚ|vowel": {
+  "oɚ|vowel": {
     title: "The “or” sound (as in door and four)",
     example: "door",
     tip: "Start with rounded lips as in “oh”, then pull your tongue back and up for the r. Glide smoothly; it is one syllable.",
     words: ["or","for","more","door","four","store","born","corn","horse","short","port","sport","floor","shore","score","wore","torn","sort","core","pour","roar","sore","board","fork","form"]
   },
-  "ɛɚ|vowel": {
+  "eɚ|vowel": {
     title: "The “air” sound (as in chair and hair)",
     example: "chair",
     tip: "Start with the vowel in “bed”, then pull your tongue back and up for the r. Glide smoothly; it is one syllable, so do not add an extra “uh”.",

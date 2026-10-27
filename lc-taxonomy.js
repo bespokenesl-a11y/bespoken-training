@@ -71,25 +71,25 @@
     "aɪ": ["Diphthongs", "long i as in time"],
     "aʊ": ["Diphthongs", "ow as in about"],
     "ɔɪ": ["Diphthongs", "oy as in point"],
-    "ɪɚ": ["Syllabic R Diphthongs", "‘ear’ as in ear"],
-    "ɛɚ": ["Syllabic R Diphthongs", "‘air’ as in chair"],
-    "ɑɚ": ["Syllabic R Diphthongs", "‘ar’ as in far"],
-    "ɔɚ": ["Syllabic R Diphthongs", "‘or’ as in or"],
-    "aɪɚ": ["Syllabic R Diphthongs", "‘ire’ as in fire"],
-    "aʊɚ": ["Syllabic R Diphthongs", "‘our’ as in our"]
+    "iɚ": ["Vowels+syllabic ɚ", "‘ear’ as in ear"],
+    "eɚ": ["Vowels+syllabic ɚ", "‘air’ as in air"],
+    "oɚ": ["Vowels+syllabic ɚ", "‘or’ as in or"],
+    "aɚ": ["Vowels+syllabic ɚ", "‘ar’ as in are"],
+    "aɪɚ": ["Vowels+syllabic ɚ", "‘ire’ as in fire"],
+    "aʊɚ": ["Vowels+syllabic ɚ", "‘our’ as in our"]
   };
 
   var CATEGORY_ORDER = [
     "Stops", "Fricatives", "Affricatives", "Nasals", "Liquids", "Glides",
-    "Vowels", "Diphthongs", "Syllabic R", "Syllabic R Diphthongs",
+    "Vowels", "Diphthongs", "Syllabic R", "Vowels+syllabic ɚ",
     "Final Consonant Clusters", "Syllabic Consonants"
   ];
 
   // Only the syllabic FORMS (n̩, l̩, and everything in VOWEL_INFO tagged
-  // "Syllabic R"/"Syllabic R Diphthongs") are pending migration to the future
+  // "Syllabic R"/"Vowels+syllabic ɚ") are pending migration to the future
   // S.R.I. module, per the proposal's 2026-09-21 resolution. Plain initial-
   // consonant l/m/n/r are ordinary consonants and are NOT flagged here.
-  var SRI_PENDING_CATEGORIES = ["Syllabic R", "Syllabic R Diphthongs", "Syllabic Consonants"];
+  var SRI_PENDING_CATEGORIES = ["Syllabic R", "Vowels+syllabic ɚ", "Syllabic Consonants"];
 
   function isSriPending(category) {
     return SRI_PENDING_CATEGORIES.indexOf(category) !== -1;
