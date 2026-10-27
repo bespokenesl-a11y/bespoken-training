@@ -9,7 +9,7 @@
  *
  * DRAFT STATUS: Stops, Fricatives, Nasals, Liquids, Glides, and Vowels are
  * drafted directly from Phil's recorded explanations. Affricatives,
- * Diphthongs, Syllabic R, Syllabic R Diphthongs, Final Consonant Clusters,
+ * Diphthongs, Syllabic R, Vowels+syllabic ɚ, Final Consonant Clusters,
  * and Syllabic Consonants were not covered in as much depth on that
  * recording, so those six paragraphs extend Phil's stated techniques
  * (vowel-stretching, feeling voicing/vibration, discrimination pairs) to
@@ -89,13 +89,13 @@
       "on that difference constantly, and build each one up with practice words chosen to " +
       "isolate it.",
 
-    // REVIEW: Syllabic R Diphthongs (ear/air/or/ar/ire/our) weren't named
+    // REVIEW: Vowels+syllabic ɚ (ear/air/or/are) weren't named
     // individually on the source recording; drafted by extending the
     // Syllabic R and Diphthongs techniques together, since this category is
     // exactly that combination (a vowel gliding into the er sound).
-    "Syllabic R Diphthongs": "These are vowel sounds that glide directly into an “er” " +
-      "sound — “ear”, “air”, “or”, “ar”, " +
-      "“ire”, and “our”. Because each one is built from a full vowel plus " +
+    "Vowels+syllabic ɚ": "These are vowel sounds that glide directly into an “er” " +
+      "sound — “ear”, “air”, “or” and “are”. " +
+      "Because each one is built from a full vowel plus " +
       "that same syllabic-r glide, we build them the same way we build any discrimination pair " +
       "— comparing this sound against its closest neighbors until the distinction is clear " +
       "and repeatable.",
