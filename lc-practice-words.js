@@ -63,7 +63,7 @@ window.LC_PRACTICE = {
     title: "The unvoiced th at the end of a word (as in bath)",
     example: "bath",
     tip: "End with the tip of your tongue lightly between your teeth and let the air flow out softly. Keep your voice off. Do not turn it into a t, an f or an s.",
-    words: ["bath","path","math","both","teeth","tooth","mouth","south","faith","truth","youth","booth","oath","moth","cloth","breath","death","wreath","myth","growth","sloth","heath","sheath","broth","loath"]
+    words: ["bath","path","math","both","teeth","tooth","mouth","south","faith","truth","youth","booth","oath","moth","cloth","breath","death","wreath","myth","growth","sloth","heath","sheath","broth","loath","with"]
   },
   "ð|initial": {
     title: "The voiced th at the start of a word (as in this)",
@@ -75,6 +75,6 @@ window.LC_PRACTICE = {
     title: "The voiced th at the end of a word (as in bathe)",
     example: "bathe",
     tip: "End with the tip of your tongue between your teeth and keep your voice on. Do not turn it into a d, a z or the unvoiced th. Compare breath (voice off) with breathe (voice on).",
-    words: ["bathe","clothe","breathe","smooth","soothe","loathe","teethe","seethe","writhe","lathe","tithe","scythe","sheathe","wreathe","with"]
+    words: ["bathe","clothe","breathe","smooth","soothe","loathe","teethe","seethe","writhe","lathe","tithe","scythe","sheathe","wreathe"]
   }
 };
